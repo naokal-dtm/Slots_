@@ -362,7 +362,7 @@ input,select,textarea{font-size:16px}
 <div style="text-align:right;position:sticky;top:0"><button id="dbgx" style="padding:3px 12px;font-size:12px">✕ 閉じる</button></div>
 <div id="lock"><input id="pw" type="password" inputmode="numeric" placeholder="PW" autocomplete="off" style="width:90px"> <button id="pwb" style="padding:4px 10px;font-size:12px">解除</button> <span id="pwm"></span></div>
 <div id="dbgm" hidden>
-<div style="margin-bottom:6px"><button id="add" style="padding:4px 10px;font-size:12px">メダル追加 +500</button></div>
+<div style="margin-bottom:6px"><button id="add" style="padding:4px 10px;font-size:12px">メダル追加 +500</button> <button id="lkf" style="padding:4px 10px;font-size:12px">次に確定LUCKY</button></div>
 <div>設定 <select id="set"></select> ／ 内部役: <b id="role">-</b></div>
 <div style="margin-top:6px">イベント誘発:
 <select id="evk"><option value="">相手ランダム</option><option value="rookie">ルーキー</option><option value="mid">ミドル</option><option value="vet">ベテラン</option></select>
@@ -517,7 +517,8 @@ const GameManager={credits:30,allin:false,bet:3,ai:false,phase:'idle',role:'NONE
  lever(){if(this.phase!=='idle'||EventManager.open||Phone.active)return;const bn=BonusManager.cur;
   if(bn){bn.left--;this.role=RNGManager.bonusGame();this.say(`${bn.type} BONUS 残り${bn.left}G 獲得${bn.total}枚`,1)}
   else{const ai=this.allin,bet=ai?this.credits:(this.free?0:PayoutManager.BET);if(this.credits<(ai?3:bet)){this.say('メダルが足りません。外に出て、おしごとで稼ごう');return}
-   this.bet=bet;this.ai=ai;if(ai)Ach.add('allin');this.credits-=bet;this.free=false;this.role=RNGManager.draw(ai);StatisticsManager.games++;this.say(ai?`全ベット ${bet}枚！ 揃う確率0.1%…`:'リールを止めよう！');
+   this.bet=bet;this.ai=ai;if(ai)Ach.add('allin');this.credits-=bet;this.free=false;this.role=this.forceLucky?(this.forceLucky=false,Math.random()<.6?'BIG':'REG'):RNGManager.draw(ai); /* デバッグ: 次に確定LUCKY */
+  StatisticsManager.games++;this.say(ai?`全ベット ${bet}枚！ 揃う確率0.1%…`:'リールを止めよう！');
    this.lampAt=null;if(this.role==='BIG'||this.role==='REG'){const r=Math.random();this.lampAt=r<.15?'lever':r<.35?'first':'end';if(this.lampAt==='lever')LampManager.on()}}
   $('role').textContent=NAME[this.role];this.phase='spin';this.stops=0;ReelManager.start();Snd.beep(300,.12,'sawtooth');this.hud()},
  stop(r){if(this.phase==='spin')ReelManager.press(r,this.role)},
@@ -1236,6 +1237,7 @@ $('ymn').onclick=()=>{const G=GameManager;if(!Yami.ready())return G.say('リー�
 const lvSet=n=>{Staff.love=Math.max(0,n);if(Staff.love>=3)Ach.do('love3');if(Staff.love>=6)Ach.do('love6');GameManager.say(`スタッフ好感度: ${Staff.love}`)};
 $('lvm').onclick=()=>lvSet(Staff.love-1);$('lvp').onclick=()=>lvSet(Staff.love+1);$('lv3').onclick=()=>lvSet(3);$('lv7').onclick=()=>lvSet(7);
 $('snk').onclick=()=>{Staff.hinted=true;Staff.snackOn=true;GameManager.say('お菓子を渡せるようにした')};
+$('lkf').onclick=()=>{GameManager.forceLucky=true;GameManager.say('次のゲームはLUCKY確定（BIGかREG）')};
 $('ymax').onclick=()=>{Yami.lim=500;Ach.do('trust500');GameManager.say('やみきんの信用をMAXにした（借入上限500枚）')};
 $('smk').onclick=()=>{Staff.smirk=true;Staff.sj=false;GameManager.say('ニヤつき状態にした（スロットに戻るまで有効）')};
 $('ybt').onclick=()=>{const G=GameManager;if(!Yami.ready())return G.say('リール停止後・会話終了後に誘発してください');Battle.start()};
@@ -1291,7 +1293,7 @@ const Mine={on:false,raf:0,t:0,last:null,lt:0,acc:0,hits:0,swing:0,side:'L',part
   const g=1+Math.floor(Math.random()*3),ups=Hero.gain(g);this.rockMax=Hero.rockMax();this.rockHP=this.rockMax;this.toast(Hero.lv>=50&&!ups.length?'EXP MAX':`EXP +${g}`);
   ups.forEach((u,i)=>setTimeout(()=>{if(!this.on)return;const hard=u.lv%5===0;this.toast(`LEVEL UP! Lv${u.lv}  ${u.n} +${u.v}`,hard?1300:1800);Snd.seq([523,659,784,1047]);this.render();
    if(hard)setTimeout(()=>{if(this.on)this.toast('岩が かたくなった！',1500)},1300)},700+i*1900));
-  if(Math.random()<.01){Hero.stones++;Ach.do('stone1');const first=!Hero.met;Hero.met=true;this.gem={x:this.RX,y:this.RY,x0:this.RX,y0:this.RY,t:0,fly:false};Snd.beep(2093,.06,'sine',.05);
+  if(Math.random()<.05){Hero.stones++;Ach.do('stone1');const first=!Hero.met;Hero.met=true;this.gem={x:this.RX,y:this.RY,x0:this.RX,y0:this.RY,t:0,fly:false};Snd.beep(2093,.06,'sine',.05);
    setTimeout(()=>{if(!this.on||this.done)return; // 返済完了・画面切り替え後には出さない(説明は次に鉱山へ入ったとき)
     Got.show('きれいな石');Snd.seq([1047,1319,1568]);this.render();
     if(first)setTimeout(()=>{if(this.on&&!this.done&&!Hero.explained)this.meet()},1900)},700+ups.length*1900)}
