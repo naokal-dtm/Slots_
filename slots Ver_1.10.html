@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
 <title>LUCKY JUG ジャグラー風スロット</title>
@@ -282,6 +282,12 @@ h1,.tabs{display:none}
 #ach-list{overflow:auto;flex:1}.ag{color:#ffd75e;margin:8px 0 2px;font-size:12px;border-bottom:1px solid #ffd75e55}
 .ar{display:flex;gap:8px;align-items:center;padding:5px 2px;border-bottom:1px solid #ffffff1a}.ar.lk{opacity:.5}.ar b{display:block;font-weight:700;font-size:13px}.ar small{display:block;color:#bbb;font-size:11px;line-height:1.3}
 #statp{max-height:72%;overflow:auto}
+.evb button{position:relative}
+.nw{position:absolute;top:-7px;right:-5px;background:#d62839;border:1px solid #ff6b78;color:#fff;font-size:10px;line-height:1.3;padding:0 4px;pointer-events:none}
+/* 連打・長押しで、文字選択・コピー用メニュー・ダブルタップズームが起こらないようにする */
+html,body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+input,select,textarea{-webkit-user-select:text;user-select:text}
+img,canvas,svg{-webkit-user-drag:none;-webkit-touch-callout:none}
 #got{position:absolute;left:50%;top:44%;z-index:57;transform:translate(-50%,-50%);background:#14122a;border:3px solid #ffd75e;box-shadow:4px 4px 0 rgba(0,0,0,.6);color:#fff;padding:14px 22px;text-align:center;font-size:20px;line-height:1.5;opacity:0;pointer-events:none}
 #got.on{animation:gotp 2.3s ease-out forwards}
 @keyframes gotp{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}10%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}18%{transform:translate(-50%,-50%) scale(1)}82%{opacity:1}100%{opacity:0;transform:translate(-50%,-56%) scale(1)}}
@@ -315,6 +321,8 @@ h1,.tabs{display:none}
 @keyframes ang{0%,100%{transform:translate(0,0)}25%{transform:translate(-2px,1px)}75%{transform:translate(2px,-1px)}}
 @media (prefers-reduced-motion:reduce){#ev.big #evt{animation:none}}
 input,select,textarea,button{font-family:inherit}
+/* スマホで入力欄をタップしたときの自動ズームを防ぐ(16px未満の文字で起こる) */
+input,select,textarea{font-size:16px}
 #savep{position:absolute;left:12px;right:12px;top:110px;z-index:34;background:rgba(0,0,0,.94);border:2px solid var(--gold);padding:10px;font-size:13px;display:flex;flex-direction:column;gap:8px}
 #savep[hidden]{display:none}#savep b{color:var(--gold)}#savep button{padding:8px}
 @media (prefers-reduced-motion:reduce){#achn{transition:none}}
@@ -686,7 +694,7 @@ function view(v,cb,opts){const G=GameManager,nodoor=opts&&opts.nodoor;if(DoorFX.
 
 // ===== スタッフ呼び出し =====
 CAST.staff={n:'スタッフ'};CAST.boss={n:'上司'};CAST.collector={n:'取り立て屋'};CAST.narr={n:''};CAST.lender={n:'金貸し'};CAST.stranger={n:'見知らぬ人'};CAST.man={n:'謎の男'};
-const Staff={bank:0,prizes:{},last:-1,nc:0,cool:0,sulk:false,love:0, // love=好感度(内部パラメーター): 缶ジュースを渡すと上がり、世間話が増える
+const Staff={bank:0,prizes:{},last:-1,nc:0,cool:0,sulk:false,love:0,seenSet:new Set(),baseSet:null, // love=好感度(内部パラメーター): 缶ジュースを渡すと上がり、世間話が増える
  L1:['そういえば、この前いただいたジュース、おいしかったです。ありがとうございました。','私、実はこのお店に入ってまだ3か月なんです。'],
  L2:['内緒ですけど、台の設定は私たちスタッフにも教えてもらえないんです。…本当ですよ？','おしごとで疲れたら、ちゃんと休んでくださいね。上司には負けないで！','隣のルーキーさん、実は私の同期の弟さんなんです。'],
  L4:['お菓子、実は甘いものに目がなくて…。…あ、今のは忘れてください！','休憩室にお菓子を隠してたんですけど、先輩に見つかっちゃいました…。','最近、お客さんが来るのを、ちょっとだけ待ってる自分がいて…。…気のせいです！'],
@@ -760,9 +768,10 @@ const Staff={bank:0,prizes:{},last:-1,nc:0,cool:0,sulk:false,love:0, // love=好
   if(first)E.intro('staff','えっ…！？ これって、お菓子の詰め合わせ…！',()=>E.intro('staff','い、いえ、ダメですダメです！ お客さんからこんな…！',ask));else ask()},
  // 複数の吹き出しを順に表示(約1.9秒で自動送り、▶で即送り)
  talk(L,i=0,done){const last=i===L.length-1;this.say(L[i],[[last?'OK':'▶',()=>{if(!last)this.talk(L,i+1,done);else if(done)done()}]]);},
- menu(){Ach.do('staff1');if(this.sulk)Ach.do('sigh');const g=this.sulk?'……はぁ、お呼びでしょうか。':'お呼びでしょうか？';this.sulk=false;const b=[['メダル預け入れ',()=>this.bankMenu()],['景品交換',()=>this.prizeMenu()],['世間話',()=>this.chat()]];
+ menu(){if(!this.baseSet)this.baseSet=new Set(this.pool());Ach.do('staff1');if(this.sulk)Ach.do('sigh');const g=this.sulk?'……はぁ、お呼びでしょうか。':'お呼びでしょうか？';this.sulk=false;const b=[['メダル預け入れ',()=>this.bankMenu()],['景品交換',()=>this.prizeMenu()],['世間話',()=>this.chat()]];
   if(this.love>=1)b.push(['渡す',()=>this.give()]); // 一度渡した後は通常の呼び出しから渡せる
-  b.push(['外に出る。',()=>{this.nc=0;Ach.do('outside');if(this.snackGiven){this.smirk=true;this.sj=false}this.say(this.snackGiven?'また来てくださいね！':'いってらっしゃいませ。',[['OK',()=>view('m')]])}]);b.push(['なんでもない',()=>this.none()]);this.say(g,b)},
+  b.push(['外に出る。',()=>{this.nc=0;Ach.do('outside');if(this.snackGiven){this.smirk=true;this.sj=false}this.say(this.snackGiven?'また来てくださいね！':'いってらっしゃいませ。',[['OK',()=>view('m')]])}]);b.push(['なんでもない',()=>this.none()]);this.say(g,b);
+  if(this.hasNew()){const bt=[...$('evb').children].find(x=>x.textContent==='世間話');if(bt){const n=document.createElement('span');n.className='nw';n.textContent='New!';bt.appendChild(n)}}},
  amt:10,
  // 上下ボタンで預ける/引き出す枚数を決めるUI
  bankMenu(){const G=GameManager;this.nc=0;this.say(`メダルのお預かりですね。手持ち${G.credits}枚、お預かり中${this.bank}枚。預けた分は全ベットでも使われません。`,
@@ -783,16 +792,19 @@ const Staff={bank:0,prizes:{},last:-1,nc:0,cool:0,sulk:false,love:0, // love=好
  buy(n,c,q=1){const G=GameManager;if(G.credits<c*q){this.prizeMenu('メダルが足りないようです…。');return}
   G.credits-=c*q;this.prizes[n]=(this.prizes[n]||0)+q;this.qty=1;G.hud();Got.show(q>1?`${n}×${q}`:n);Ach.do('prize1');this.got=this.got||{};this.got[n]=1;if(Object.keys(this.got).length>=this.P.length)Ach.do('prizeall');Snd.seq([784,988]);
   this.say(`${n}${q>1?`を${q}個`:''}ですね。ありがとうございました！`,[['続ける',()=>this.prizeMenu()],['OK',()=>{}]])},
+ // 世間話のレパートリー(好感度・昇進の話で変わる)。最初に見た時点のものは「既知」とし、あとから増えた未読があれば「New!」を出す
+ pool(){let p=[...this.T,...(this.love>=1?this.L1:[]),...(this.love>=2?this.L2:[]),...(this.love>=3?this.L3:[]),...(this.love>=5?this.L4:[]),...(this.love>=7?this.L5:[])];
+  if(this.promoDone){const ex=['私、実はこのお店に入ってまだ3か月なんです。','あなたが来てくれると、ちょっと嬉しいんです。…あ、お客さんとして、ですよ？','最近、お客さんが来るのを、ちょっとだけ待ってる自分がいて…。…気のせいです！','ありがとうございます。お客さんが来てくれると、毎日が少しだけ楽しいです。'];
+   p=p.filter(t=>!ex.includes(t));p.push('…。','…そんな顔しないでください！ほら、笑顔ですよ。')}
+  return p},
+ hasNew(){if(!this.baseSet)return false;return this.pool().some(t=>!this.baseSet.has(t)&&!this.seenSet.has(t))},
  angry(){const E=EventManager,G=GameManager;Ach.do('listen');Snd.seq([220,196,165]);Moon.shake(7);setTimeout(()=>Moon.shake(0),300);
   E.show('staff','ちゃんと聞いてください！！',[['はい…',()=>{G.say('スタッフに、ちゃんと聞くよう怒られた…')}]],{big:true,noskip:true,speed:90})}, // 「もう少し話す」を連打すると、スキップ不能の大きなテキストボックスで怒られる
  chat(chained){const now=performance.now();if(chained&&this.lt&&now-this.lt<1000)this.cq=(this.cq||0)+1;else this.cq=0;this.lt=now;if(this.cq>=5){this.cq=0;this.angry();return}
   if(!chained&&(Ach.c.movies||0)>=5&&!this.promoDone){this.promoAsk();return}
   if(!chained&&this.promoDone&&!this.farewell){this.farewell=true;this.talk(['寂しくなっちゃいますね。','でも、その日までいつも通りに','その方が、楽しくお別れできるので！'],0,()=>{});return} /* 昋進の話の直後の世間話で、一度だけ */ // 映画に5回以上行ったあとの世間話で、スタッフから声をかけられる
-  this.nc=0;Ach.add('chat');let p=[...this.T,...(this.love>=1?this.L1:[]),...(this.love>=2?this.L2:[]),...(this.love>=3?this.L3:[]),...(this.love>=5?this.L4:[]),...(this.love>=7?this.L5:[])];
-  if(this.promoDone){ // 昇進の話のあとは、「入って3か月」の話と、気があることを匂わせる話はしない。代わりに別れを惜しむ話が加わる
-   const ex=['私、実はこのお店に入ってまだ3か月なんです。','あなたが来てくれると、ちょっと嬉しいんです。…あ、お客さんとして、ですよ？','最近、お客さんが来るのを、ちょっとだけ待ってる自分がいて…。…気のせいです！','ありがとうございます。お客さんが来てくれると、毎日が少しだけ楽しいです。'];
-   p=p.filter(t=>!ex.includes(t));p.push('…。','…そんな顔しないでください！ほら、笑顔ですよ。')}
-  let i;do i=Math.floor(Math.random()*p.length);while(i===this.last&&p.length>1);this.last=i;this.say(p[i],[['もう少し話す',()=>this.chat(true)],['OK',()=>{}]])}};
+  this.nc=0;Ach.add('chat');const p=this.pool();
+  let i;do i=Math.floor(Math.random()*p.length);while(i===this.last&&p.length>1);this.last=i;this.seenSet.add(p[i]);this.say(p[i],[['もう少し話す',()=>this.chat(true)],['OK',()=>{}]])}};
 $('staff').onclick=()=>{const G=GameManager;if(G.phase!=='idle'||EventManager.open)return G.say('リール停止後・会話終了後に呼んでください');Staff.call()};
 
 // ===== 強制出勤の電話(1回転ごとに5%) =====
@@ -1511,7 +1523,7 @@ const Save={KEY:'luckyjug-save-v1',t:0,ok:true,off:false,
   g:{cr:GameManager.credits,free:GameManager.free},set:SettingManager.cur,
   st:{games:StatisticsManager.games,big:StatisticsManager.big,reg:StatisticsManager.reg,grape:StatisticsManager.grape,cherry:StatisticsManager.cherry,replay:StatisticsManager.replay},
   bn:BonusManager.cur,
-  sf:{bank:Staff.bank,prizes:Staff.prizes,love:Staff.love,got:Staff.got||{},cool:Staff.cool,sulk:Staff.sulk,hinted:Staff.hinted,snackOn:Staff.snackOn,snackN:Staff.snackN,snackGiven:Staff.snackGiven,ticket:Staff.ticket,movieDone:Staff.movieDone,promoDone:Staff.promoDone,farewell:Staff.farewell},
+  sf:{bank:Staff.bank,prizes:Staff.prizes,love:Staff.love,got:Staff.got||{},cool:Staff.cool,sulk:Staff.sulk,hinted:Staff.hinted,snackOn:Staff.snackOn,snackN:Staff.snackN,snackGiven:Staff.snackGiven,ticket:Staff.ticket,movieDone:Staff.movieDone,promoDone:Staff.promoDone,farewell:Staff.farewell,base:Staff.baseSet?[...Staff.baseSet]:null,seen:[...Staff.seenSet]},
   ev:{loan:EventManager.loan},
   y:{debt:Yami.debt,pr:Yami.pr,spins:Yami.spins,cs:Yami.cs,waits:Yami.waits,amt:Yami.amt,lim:Yami.lim},
   ph:{forced:Phone.forced,ign:Phone.ign,visit:Phone.visit,vsp:Phone.vsp},
@@ -1528,7 +1540,7 @@ const Save={KEY:'luckyjug-save-v1',t:0,ok:true,off:false,
   if(d.set)SettingManager.cur=d.set;
   if(d.st)Object.assign(StatisticsManager,d.st);
   if(d.bn){BonusManager.cur=d.bn;$('lamp').classList.add('on')}
-  if(d.sf){Staff.bank=d.sf.bank|0;Staff.prizes=d.sf.prizes||{};Staff.love=d.sf.love|0;Staff.got=d.sf.got||{};Staff.cool=d.sf.cool|0;Staff.sulk=!!d.sf.sulk;Staff.hinted=!!d.sf.hinted;Staff.snackOn=!!d.sf.snackOn;Staff.snackN=d.sf.snackN|0;Staff.snackGiven=!!d.sf.snackGiven;Staff.ticket=!!d.sf.ticket;Staff.movieDone=!!d.sf.movieDone;Staff.promoDone=!!d.sf.promoDone;Staff.farewell=!!d.sf.farewell}
+  if(d.sf){Staff.bank=d.sf.bank|0;Staff.prizes=d.sf.prizes||{};Staff.love=d.sf.love|0;Staff.got=d.sf.got||{};Staff.cool=d.sf.cool|0;Staff.sulk=!!d.sf.sulk;Staff.hinted=!!d.sf.hinted;Staff.snackOn=!!d.sf.snackOn;Staff.snackN=d.sf.snackN|0;Staff.snackGiven=!!d.sf.snackGiven;Staff.ticket=!!d.sf.ticket;Staff.movieDone=!!d.sf.movieDone;Staff.promoDone=!!d.sf.promoDone;Staff.farewell=!!d.sf.farewell;if(d.sf.base)Staff.baseSet=new Set(d.sf.base);if(d.sf.seen)Staff.seenSet=new Set(d.sf.seen)}
   if(d.ev)EventManager.loan=d.ev.loan||null;
   if(d.y)Object.assign(Yami,d.y);
   if(d.ph){Phone.forced=!!d.ph.forced;Phone.ign=d.ph.ign|0;Phone.visit=!!d.ph.visit;Phone.vsp=d.ph.vsp|0}
@@ -1673,7 +1685,7 @@ $('allin').onclick=e=>{const g=GameManager;g.allin=!g.allin;e.target.textContent
 $('add').onclick=()=>{GameManager.credits+=500;GameManager.hud()};
 $('snd').onclick=e=>{Snd.on=!Snd.on;e.target.textContent='音: '+(Snd.on?'ON':'OFF')};
 $('dbgb').onclick=()=>{const d=$('dbg');d.style.display=d.style.display==='block'?'none':'block'};
-$('pwb').onclick=()=>{if($('pw').value==='2528'){$('lock').hidden=true;$('dbgm').hidden=false}else $('pwm').textContent='PWが違います'};
+$('pwb').onclick=()=>{$('pw').blur();if($('pw').value==='2528'){$('lock').hidden=true;$('dbgm').hidden=false}else $('pwm').textContent='PWが違います'};
 $('pw').onkeydown=e=>{if(e.key==='Enter')$('pwb').click()};
 $('evgo').onclick=()=>{const G=GameManager,E=EventManager,h=$('evh').value;
  if(E.open)return G.say('吹き出しを閉じてから誘発してください');if(G.phase!=='idle')return G.say('リール停止後に誘発してください');
@@ -1690,6 +1702,12 @@ addEventListener('keydown',e=>{if(Mine.on){const m={KeyA:'L',KeyW:'L',ArrowLeft:
 if(document.fonts)document.fonts.load('100px TamanegiKaisho','破産').catch(()=>{});
 function fit(){const s=Math.min(2,(innerWidth-8)/360,(document.body.clientHeight-8)/640);document.querySelector('.m').style.setProperty('--s',s)}
 addEventListener('resize',fit);fit();
+/* 拡大縮小(ピンチ・ダブルタップ)と、長押しメニューを抑える */
+['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
+document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
+document.addEventListener('contextmenu',e=>{if(!/^(INPUT|TEXTAREA)$/.test(e.target.tagName))e.preventDefault()});
+document.addEventListener('dblclick',e=>{if(!/^(INPUT|TEXTAREA)$/.test(e.target.tagName))e.preventDefault()});
+document.addEventListener('selectstart',e=>{if(!/^(INPUT|TEXTAREA)$/.test(e.target.tagName))e.preventDefault()});
 $('dbgx').onclick=()=>{$('dbg').style.display='none'};$('statp').onclick=()=>{$('statp').hidden=true};
 $('stb').onclick=()=>{$('statp').hidden=!$('statp').hidden};
 Save.load();ReelManager.render();GameManager.hud();Save.start();
