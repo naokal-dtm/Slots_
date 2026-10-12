@@ -377,7 +377,7 @@ input,select,textarea{font-size:16px}
 <label><input type="checkbox" id="invf"> 次の退勤で必ず誘う</label></div>
 <div style="margin-top:6px">闇金: <button id="ymc" style="padding:4px 10px;font-size:12px">催促</button> <button id="ybt" style="padding:4px 10px;font-size:12px">戦闘</button> <button id="ymn" style="padding:4px 10px;font-size:12px">鉱山</button> <button id="ymax" style="padding:4px 10px;font-size:12px">信用MAX</button> <button id="smk" style="padding:4px 10px;font-size:12px">ニヤつき</button></div>
 <div style="margin-top:6px">マップ: <button id="dbjam" style="padding:4px 10px;font-size:12px">大渋滞させる</button> <button id="dbgcar" style="padding:4px 10px;font-size:12px">ゲーミングカー出現</button> <button id="hpg" style="padding:4px 10px;font-size:12px">幸せの質問</button> <button id="hpc" style="padding:4px 10px;font-size:12px">幸せの電話</button>
-<div style="margin-top:6px">映画: <button id="mvi" style="padding:4px 10px;font-size:12px">帰社後の誘い</button> <button id="mvt" style="padding:4px 10px;font-size:12px">ペアチケット+1</button> <button id="mvp" style="padding:4px 10px;font-size:12px">昇進の話</button></div></div>
+<div style="margin-top:6px">映画: <button id="mvi" style="padding:4px 10px;font-size:12px">帰社後の誘い</button> <button id="mvt" style="padding:4px 10px;font-size:12px">ペアチケット+1</button> <button id="mvp" style="padding:4px 10px;font-size:12px">昇進の話</button> <button id="lastd" style="padding:4px 10px;font-size:12px">お別れの前の日</button> <button id="lifed" style="padding:4px 10px;font-size:12px">人生相談</button></div></div>
 <div style="margin-top:6px">電話: <button id="phgo" style="padding:4px 10px;font-size:12px">今すぐ着信</button> <button id="vsgo" style="padding:4px 10px;font-size:12px">上司の来店</button>
 <label><input type="checkbox" id="phf"> 次の回転後に必ず着信</label></div>
 <div style="margin-top:6px">スタッフ好感度: <button id="lvm" style="padding:4px 10px;font-size:12px">-1</button> <button id="lvp" style="padding:4px 10px;font-size:12px">+1</button> <button id="lv3" style="padding:4px 10px;font-size:12px">3にする</button> <button id="lv7" style="padding:4px 10px;font-size:12px">7にする</button> <button id="snk" style="padding:4px 10px;font-size:12px">お菓子解禁</button></div>
@@ -609,6 +609,17 @@ const JobManager={names:['佐藤','鈴木','高橋','田中','伊藤','渡辺','
   else jc.style.visibility='visible'},
  debugInvite(){this.st='done';$('jtc').hidden=true;$('jres').hidden=false;$('jrl').innerHTML='';this.invite()},
  leave(){clearTimeout(this.tm);this.pre=false;$('jskip').hidden=true;(this.rt||[]).forEach(clearTimeout);this.st='idle'},
+ // 退勤ボタン: 上司の呼び出しで出勤したときは3件成功させるまで帰れない/1件だけ失敗して帰ろうとすると怒られて帰れない
+ tryQuit(){const tot=this.sOk+this.sNg;
+  if(tot===1&&this.sNg===1)return this.deny(['おい！ロクに注文通りにやってないじゃないか！','それに一回ポッキリしか注文受けてないだろ！','そんな適当な仕事があるか！']);
+  if(Phone.forced&&this.sOk<3)return this.deny(`まだだ！ 呼び出したんだから、最低でも3件は成功させてから帰れ！（あと${3-this.sOk}件）`);
+  this.quit()},
+ deny(t){if(this.dn)return;this.dn=true;const L=[].concat(t),old=$('jt').textContent,onm=$('jnm').textContent;this.btns(0);$('jnm').textContent='上司';
+  L.forEach((x,i)=>setTimeout(()=>{$('jt').textContent='「'+x+'」';Snd.seq([220,180])},i*1800)); // 複数行のときは1.8秒ごとに次のセリフへ
+  setTimeout(()=>{$('jt').textContent=old;$('jnm').textContent=onm;this.btns(1);this.dn=false},(L.length-1)*1800+2600)},
+ // 仕事をせずに帰る(日付を変えるためだけの出入り)が3回続くと、上司に呼び止められて、そのまま働かされる
+ homeGate(go){if((this.wk|0)>0){this.ih=0;go();return}this.ih=(this.ih|0)+1;if(this.ih>=3){this.ih=0;this.scoldGo();return}go()},
+ scoldGo(){this.scold=true;this.idle();this.punch();clearTimeout(this.tm);this.tm=setTimeout(()=>{if(this.st==='punch')this.next()},1300)},
  punch(){if(this.st!=='idle')return;this.st='punch';this.pre=true;Ach.do('shift1');this.sk=false;this.t0=performance.now();this.sOk=0;this.sNg=0;this.sMed=0;$('jtc').hidden=true;$('jb').hidden=false;$('jbarw').hidden=true;$('jnm').textContent='タイムカード';
   $('jt').textContent=`ガチャン！ ${this.clock().slice(0,5)} 出勤しました。`;Snd.seq([300,200]);this.syncSkip()},
  next(keep){clearTimeout(this.tm);if(!keep)this.sk=false;this.cd=false;this.rs=0;this.t0=performance.now();$('jt').style.fontSize='';$('jt').style.textAlign='';this.st='show';this.sel={};const o=this.order={f:this.rnd(this.floors),d:this.rnd(this.depts),p:this.rnd(this.names),i:this.rnd(this.items)};
@@ -626,11 +637,12 @@ const JobManager={names:['佐藤','鈴木','高橋','田中','伊藤','渡辺','
  endConv(){this.conv=false;$('jc').hidden=true;$('jt').hidden=false;$('jt').textContent='';$('jcb').innerHTML='';clearInterval($('jc')._ty)},
  // 注文の前の上司のセリフ(ニヤつき状態のときは、そのあとに指摘と「まぁいい、注文を言うぞ。いいか？」)
  preTalk(){const L=['おい、ちょっと頼まれてくれるか？','一回しか言わないからよく聞けよ？'];
+  if(this.scold){this.scold=false;this.scoldNow=true;this.syncSkip();Ach.do('scold');L.unshift('おい待て、お前ここ最近入口付近でうろうろしてすぐ帰るが何やってるんだ？','そんな事してる暇があるなら少しは働いていけ！')}
   if(Staff.smirk&&!Staff.sj){Staff.sj=true;Ach.do('smirk');L.push('…ってかお前、なにニヤニヤしてるんだ。気味が悪いぞ。','まぁいい、注文を言うぞ。いいか？')}
-  this.boxConv(L,()=>{this.endConv();this.say(0)})},
- syncSkip(){$('jskip').hidden=!(this.pre&&(this.st==='punch'||this.st==='show'))},
+  this.boxConv(L,()=>{this.scoldNow=false;this.endConv();this.say(0)})},
+ syncSkip(){$('jskip').hidden=!(this.pre&&(this.st==='punch'||this.st==='show'))||!!this.scoldNow},
  // 「スキップ」: 余計な会話(前置き・指摘など)を全部飛ばして、3カウントのあと注文へ
- skipAll(){if(!this.pre)return;const was=this.st;this.sk=true;Staff.sj=true;clearTimeout(this.tm);if(was==='punch')this.next(true);this.endConv();this.sk=true;this.pre=true;this.say(0)},
+ skipAll(){if(!this.pre||this.scoldNow)return;const was=this.st;this.sk=true;Staff.sj=true;clearTimeout(this.tm);if(was==='punch')this.next(true);this.endConv();this.sk=true;this.pre=true;this.say(0)},
  count(k,cb){const j=$('jt');if(k===0){j.style.fontSize='';j.style.textAlign='';cb();return}
   j.style.fontSize='34px';j.style.textAlign='center';j.textContent=String(k);this.bar(.5);Snd.beep(440+(3-k)*110,.1,'square',.05);this.tm=setTimeout(()=>this.count(k-1,cb),500)},
  say(n){if(n>=this.seq.length){this.ask(0);return}this.cur=n;this.syncSkip();
@@ -662,7 +674,7 @@ const JobManager={names:['佐藤','鈴木','高橋','田中','伊藤','渡辺','
    ['断る',()=>{Ach.do('nodrink');E.show('boss','「そうか…残念だな…。また今度な…。」',[['OK',fin]])}]])},
  fin(){$('jmodal').hidden=false;Snd.beep(600,.06,'square',.04)},
  // 退勤: 届けた回数×15%の確率でボーナス(10〜29枚、高いほど低確率)
- quit(){if(this.st!=='result')return;this.st='done';Phone.forced=false;clearTimeout(this.tm);const G=GameManager,n=this.sOk,pc=Math.min(100,n*15),tot=n+this.sNg;
+ quit(){if(this.st!=='result')return;this.st='done';Phone.forced=false;clearTimeout(this.tm);const G=GameManager,n=this.sOk,pc=Math.min(100,n*15),tot=n+this.sNg;this.wk=(this.wk|0)+tot;
   const mult=this.drink?2.5:1;this.drink=false;const b=Math.random()*100<pc?Math.round(this.pickW(10,29)*mult):0;G.credits+=b;G.hud();const inv=$('invf').checked||(Math.random()<.15&&G.credits>=this.COST);$('jb').hidden=true;this.btns(0);$('jform').hidden=true;$('jres').hidden=false;
   const r=(a,c,x='')=>`<div class="rr"${x}><span>${a}</span><b>${c}</b></div>`;
   const rate=tot?Math.floor(n/tot*100):0;
@@ -676,8 +688,8 @@ const JobManager={names:['佐藤','鈴木','高橋','田中','伊藤','渡辺','
   (this.rt||[]).forEach(clearTimeout);this.rt=[];$('jrl').innerHTML='';
   rows.forEach((h,i)=>this.rt.push(setTimeout(()=>{const d=document.createElement('div');d.innerHTML=h;const e=d.firstChild;e.classList.add('in');$('jrl').appendChild(e);Snd.beep(600+i*60,.06,'square',.04);
    if(i===rows.length-1){if(inv)this.invite();else this.fin();Snd.seq(tot>5&&rate>=50||b?[660,880,1320]:[440,330])}},i*650)))}};
-JobManager.build();$('jpunch').onclick=()=>JobManager.punch();$('jquit').onclick=()=>JobManager.quit();$('jm-in').onclick=()=>{$('jmodal').hidden=true;JobManager.idle()};$('jm-home').onclick=()=>{$('jmodal').hidden=true;if(Staff.movieDone&&!Staff.gone&&Math.random()<.5){view('m');Movie.later()}else Day.next(true)}; /* 帰社=基本的に翌日へ。スタッフに誘われたときだけ、映画のあとに翌日へ */
-$('jhome').onclick=()=>Day.next(true);setInterval(()=>{if(JobManager.st==='idle')$('jclock').textContent=JobManager.clock()},1000);$('jsend').onclick=()=>JobManager.next();
+JobManager.build();$('jpunch').onclick=()=>JobManager.punch();$('jquit').onclick=()=>JobManager.tryQuit();$('jm-in').onclick=()=>{$('jmodal').hidden=true;JobManager.idle()};$('jm-home').onclick=()=>{$('jmodal').hidden=true;JobManager.homeGate(()=>{if(Staff.movieDone&&!Staff.gone&&Math.random()<.5){view('m');Movie.later()}else Day.next(true)})}; /* 帰社=基本的に翌日へ。スタッフに誘われたときだけ、映画のあとに翌日へ */
+$('jhome').onclick=()=>JobManager.homeGate(()=>Day.next(true));setInterval(()=>{if(JobManager.st==='idle')$('jclock').textContent=JobManager.clock()},1000);$('jsend').onclick=()=>JobManager.next();
 // 画面切り替えは自動ドアの演出を挟む(閉まりきったところで画面を入れ替える)
 const DoorFX={busy:false,run(label,fn){const d=$('door');
   if(matchMedia('(prefers-reduced-motion:reduce)').matches){fn();return}
@@ -686,11 +698,13 @@ const DoorFX={busy:false,run(label,fn){const d=$('door');
 const VIEWS={s:['slotv','スロット店'],m:['mapv','外'],o:['moonv','月'],b:['battlev','戦闘'],k:['minev','鉱山'],j:['jobv','会社'],y:['yamiv','やみきん']};
 function view(v,cb,opts){const G=GameManager,nodoor=opts&&opts.nodoor;if(DoorFX.busy&&!nodoor)return;const cur=Object.keys(VIEWS).find(k=>!$(VIEWS[k][0]).hidden);if(v===cur)return;
  if(Sky.navLock&&cur==='m'&&v!=='m')return;
- if(Phone.active)return; /* 電話の着信・通話中は画面を移動できない */ /* マップで会話イベントが起きる前後は、エリア選択で移動できない */
+ if(Phone.active)return; /* 電話の着信・通話中は画面を移動できない */
+ if(v==='k'&&cur!=='k'&&Sky.red)Sky.mineRed=true; /* 赤信号のまま鉱山へ行って帰ってくると大渋滞 */
+ if(cur==='k'&&v!=='k'&&Sky.mineRed){Sky.mineRed=false;if(Sky.red)Sky.jamSpins=Math.max(Sky.jamSpins|0,10)} /* マップで会話イベントが起きる前後は、エリア選択で移動できない */
  if(G.phase!=='idle'||EventManager.open){G.say('リール停止後・会話終了後に切り替えてください');return}
  const swap=()=>{const m=document.querySelector('.m');m.classList.toggle('job',v==='j');m.classList.toggle('yami',v==='y');m.classList.toggle('mine',v==='k');
   Object.keys(VIEWS).forEach(k=>$(VIEWS[k][0]).hidden=k!==v);
-  Ach.visit(v);if(v==='s'){Staff.smirk=false;Staff.sj=false}if(v==='j')JobManager.idle();else JobManager.leave();if(v==='y')Yami.enter();if(v==='m')Sky.start();else Sky.stop();if(v==='o'){Moon.start();Ach.do('moon1')}else Moon.stop();if(v==='m'&&Math.random()<.05)Happy.later();if(v==='k')Mine.start();else Mine.stop();if(cb)cb()};
+  Ach.visit(v);if(v==='s'){Staff.smirk=false;Staff.sj=false}if(v==='j')JobManager.idle();else JobManager.leave();if(v==='y')Yami.enter();if(v==='m')Sky.start();else Sky.stop();if(v==='o'){Moon.start();Ach.do('moon1')}else Moon.stop();if(v==='m'&&Math.random()<Happy.chance())Happy.later();if(v==='k')Mine.start();else Mine.stop();if(cb)cb()};
  if(nodoor)swap();else DoorFX.run(VIEWS[v][1],swap)}
 
 
@@ -708,24 +722,28 @@ const Staff={bank:0,prizes:{},last:-1,nc:0,cool:0,sulk:false,love:0,seenSet:new 
  call(){if(this.cool>0&&!this.gone){Ach.do('nobody');Snd.beep(200,.15);EventManager.show('narr','しかし　だれもこなかった。',[['外に出る。',()=>{Ach.do('outside');view('m')}],['やめる',()=>{}]]);return} /* スタッフを怒らせて呼べない間も、外に出ることだけはできる */this.menu()},
  tick(){if(this.cool>0)this.cool--},
  // 「なんでもない」連打: 7回目から反応が変化し、11回目で不機嫌になり約30ゲーム来なくなる
- none(){if(this.gone){this.say(['あ、そっすか。じゃ。','ん？ 用ないんすか？','えーと…何かあったら言って下さいねー。'][Math.floor(Math.random()*3)],[['OK',()=>{}]]);return}
+ none(){if(this.lastTalk&&!this.gone){if(this.cried){this.say('…。',[['OK',()=>{}]]);return}const k=++this.nc;if(k>=5){this.nc=0;this.cry();return}this.say(['…。','……。','………。','…………。'][k-1],[['OK',()=>{}]]);return}
+  if(this.gone){this.say(['あ、そっすか。じゃ。','ん？ 用ないんすか？','えーと…何かあったら言って下さいねー。'][Math.floor(Math.random()*3)],[['OK',()=>{}]]);return}
   const n=++this.nc,T={3:'…？そうですか。',4:'…？',5:'……？？？',6:'…。',7:'…からかってます？'};
   if(n>=7){Ach.do('tease');this.cool=30;this.sulk=true;this.nc=0;const j=this.prizes['缶ジュース']>0; // 缶ジュースを持っていれば渡して機嫌を直せる
    this.say(T[7],j?[['缶ジュースを渡す',()=>this.gift(true)],['渡さない',()=>{}]]:[['OK',()=>{}]]);return}
   this.say(T[n]||'そうですか。ごゆっくりどうぞ。',[['OK',()=>{}]])},
  // tease=true: 「からかってます？」への対応(機嫌が直り、来なくなる状態も解除)
- gift(tease){const G=GameManager,was=this.love;if(--this.prizes['缶ジュース']<=0)delete this.prizes['缶ジュース'];this.love++;this.nc=0;Ach.do('juice1');if(this.love>=3)Ach.do('love3');
+ gift(tease){const G=GameManager,was=this.love;this.markGiven('缶ジュース');if(--this.prizes['缶ジュース']<=0)delete this.prizes['缶ジュース'];this.love++;this.nc=0;Ach.do('juice1');if(this.love>=3)Ach.do('love3');
   if(tease){this.cool=0;this.sulk=false;Ach.do('makeup')}G.hud();G.say('スタッフに缶ジュースを渡した。少し距離が縮まった気がする');Snd.seq([784,988,1175]);
   if(this.love===1)this.talk(['…ジュース？','…まぁ、ありがとうございます。','ちょうど喉が渇いてたので。','…すいません、さっきはちょっとイライラしてて。','でも次からは何回も呼ぶんじゃなくて普通に渡してください！','それじゃ…。']);
+  else if(this.lifeStage===1&&this.late())this.vent();
   else{const r=['ありがとうございます！ 助かります〜。','わ、また…！ 大事にいただきますね。','いつもすみません…！ いただきます。'][Math.floor(Math.random()*3)];
-   if(was>=3&&!this.hinted){this.hinted=true;this.snackOn=true;Ach.do('snackhint');this.talk([r,'…そろそろお菓子が欲しくなってきちゃいますね。','…。','…ななななんちゃって！あはは…。','…冗談ですよ？お客さんに媚びるのはダメなことです…！'])}
+   if(was>=3&&this.lifeDone&&!this.hinted&&this.late()){this.hinted=true;this.sd=Day.n;this.snackOn=true;Ach.do('snackhint');this.talk([r,'…そろそろお菓子が欲しくなってきちゃいますね。','…。','…ななななんちゃって！あはは…。','…冗談ですよ？お客さんに媚びるのはダメなことです…！'])}
    else this.say(r,[['OK',()=>{}]])}},
  // 「渡す」: 持ち物(所持数つき)から選んで渡す。何も持っていないときは、スタッフが察して慌てる
  give(){this.nc=0;const P=this.prizes,names=Object.keys(P).filter(k=>P[k]>0);
   if(!names.length){this.talk(['どうしたんですか？ ポケットまさぐって。','『渡せるものがない…』？','…ってそんな悲しそうな顔しないでください！！ 私別に大丈夫なので！',...(this.snackGiven?['私はその気持ちだけでも嬉しいと言うか…。','…いえ、なんでもないです！']:[])]);return}
   const bt=names.map(n=>[`${n} ×${P[n]}`,()=>this.giveItem(n)]);bt.push(['戻る',()=>this.menu()]);this.say('何か頂けるんですか？',bt)},
- giveItem(n){if(n==='缶ジュース'){this.gift(false);return}
-  if(n==='お菓子の詰め合わせ'&&this.snackOn){this.snack();return}
+ giveItem(n){if(this.givenToday(n)){this.refuse(n);return}
+  if(n==='缶ジュース'){this.gift(false);return}
+  if(n==='ぬいぐるみ'&&this.lifeStage===2){this.plush();return}
+  if(n==='お菓子の詰め合わせ'&&this.snackOn&&this.lifeDone){this.snack();return}
   if(n==='映画のペアチケット'){this.ticketDate();return}
   this.say(n==='映画のペアチケット'?'映画のペアチケット…？ …これは、お客さんが使ってください。':'えっ…！？ そ、そんな、いただけません…！ お気持ちだけで十分です。',[['戻る',()=>this.give()],['OK',()=>{}]])},
  // 「また来てくださいね！」を言われてからスロットに戻るまでは「ニヤつき状態」(隠し): おしごとでは上司に指摘される
@@ -743,7 +761,7 @@ const Staff={bank:0,prizes:{},last:-1,nc:0,cool:0,sulk:false,love:0,seenSet:new 
    ['やっぱりやめておく',()=>E.show('staff','あ…そ、そうですよね。すみません、はしゃいじゃって…。',[['OK',()=>{}]])]])))},
  // お菓子の詰め合わせを渡す: 選択肢によって好感度が上がる(どれを選ぶかで上がり方が違う)
  snack(){const E=EventManager,G=GameManager,first=!this.snackN;this.snackN=(this.snackN||0)+1;
-  let gained=0;const use=()=>{this.snackGiven=true;if(--this.prizes['お菓子の詰め合わせ']<=0)delete this.prizes['お菓子の詰め合わせ'];G.hud()};
+  let gained=0;const use=()=>{this.markGiven('お菓子の詰め合わせ');this.snackGiven=true;if(--this.prizes['お菓子の詰め合わせ']<=0)delete this.prizes['お菓子の詰め合わせ'];G.hud()};
   const up=n=>{gained+=n;this.love+=n;Ach.do('snack1');if(this.love>=6)Ach.do('love6');Snd.seq([784,988,1175])};
   const fin=()=>G.say('スタッフにお菓子の詰め合わせを渡した'+(gained?'（好感度が上がった）':''));
   const q3=()=>{ // 好感度の上がり幅: チョコ>クッキー>ポテチ>おもち>バナナ。並びはランダムでバナナは必ず最後
@@ -773,45 +791,103 @@ const Staff={bank:0,prizes:{},last:-1,nc:0,cool:0,sulk:false,love:0,seenSet:new 
  talk(L,i=0,done){const last=i===L.length-1;this.say(L[i],[[last?'OK':'▶',()=>{if(!last)this.talk(L,i+1,done);else if(done)done()}]]);},
  menu(){CAST.staff.n=this.gone?'男性スタッフ':'スタッフ';
   if(this.gone&&!this.greeted){this.greeted=true;Ach.do('staffgone');this.talk(['あっ、どもー。','はじめましてェ、今日からこの店に配属になりましたァ。','何かありゃ声かけて下さいー。'],0,()=>this.menu());return}
-  if(!this.baseSet)this.baseSet=new Set(this.pool());Ach.do('staff1');if(this.sulk)Ach.do('sigh');const g=this.gone?'ん、呼びましたー？':(this.sulk?'……はぁ、お呼びでしょうか。':'お呼びでしょうか？');this.sulk=false;const b=[['メダル預け入れ',()=>this.bankMenu()],['景品交換',()=>this.prizeMenu()],['世間話',()=>this.chat()]];
-  if(this.love>=1&&!this.gone)b.push(['渡す',()=>this.give()]); // 一度渡した後は通常の呼び出しから渡せる
-  b.push(['外に出る。',()=>{this.nc=0;Ach.do('outside');if(this.snackGiven&&!this.gone){this.smirk=true;this.sj=false}this.say(this.gone?'いってらっしゃっせー。':(this.snackGiven?'また来てくださいね！':'いってらっしゃいませ。'),[['OK',()=>view('m')]])}]);b.push(['なんでもない',()=>this.none()]);this.say(g,b);
+  if(!this.baseSet)this.baseSet=new Set(this.pool());Ach.do('staff1');if(this.sulk)Ach.do('sigh');const g=this.gone?'ん、呼びましたー？':this.sad()?'…………はい。':(this.sulk?'……はぁ、お呼びでしょうか。':'お呼びでしょうか？');this.sulk=false;const b=[['メダル預け入れ',()=>this.bankMenu()],['景品交換',()=>this.prizeMenu()],['世間話',()=>this.chat()]];
+  if(this.lv>=1&&!this.gone)b.push(['渡す',()=>this.give()]); // 一度渡した後は通常の呼び出しから渡せる
+  b.push(['外に出る。',()=>{this.nc=0;Ach.do('outside');if(this.snackGiven&&!this.gone){this.smirk=true;this.sj=false}
+   // お菓子をあげたあと、初めて「また来てくださいね！」と言うときだけ、ためらいながら言う
+   if(this.snackGiven&&!this.gone&&!this.sad()&&!this.sendoffDone){this.sendoffDone=true;this.talk(['いってらっしゃいませ。','……あっ、','あの！','まっ…','また来てくださいね！'],0,()=>view('m'));return}
+   this.say(this.gone?'いってらっしゃっせー。':this.sad()?'…ありがとうございました。':(this.snackGiven?'また来てくださいね！':'いってらっしゃいませ。'),[['OK',()=>view('m')]])}]);b.push(['なんでもない',()=>this.none()]);this.say(g,b);
   if(!this.gone&&this.hasNew()){const bt=[...$('evb').children].find(x=>x.textContent==='世間話');if(bt){const n=document.createElement('span');n.className='nw';n.textContent='New!';bt.appendChild(n)}}},
  amt:10,
  // 上下ボタンで預ける/引き出す枚数を決めるUI
- bankMenu(){const G=GameManager;this.nc=0;this.say(this.gone?`はいはい、預け入れっすねー。手持ち${G.credits}枚、預かり中${this.bank}枚っす。預けた分は全ベットでも使われないんで。`:`メダルのお預かりですね。手持ち${G.credits}枚、お預かり中${this.bank}枚。預けた分は全ベットでも使われません。`,
+ bankMenu(){const G=GameManager;this.nc=0;this.say(this.gone?`はいはい、預け入れっすねー。手持ち${G.credits}枚、預かり中${this.bank}枚っす。預けた分は全ベットでも使われないんで。`:this.sad()?`……お預かり、ですね…。手持ち${G.credits}枚、お預かり中${this.bank}枚です…。`:`メダルのお預かりですね。手持ち${G.credits}枚、お預かり中${this.bank}枚。預けた分は全ベットでも使われません。`,
    [['預ける',()=>this.dep(this.amt)],['引き出す',()=>this.dep(-this.amt)],['戻る',()=>this.menu()]]);
   const row=document.createElement('div');row.className='stp';row.id='stp';const v=document.createElement('b');v.textContent=this.amt+'枚';
   const mk=(l,d)=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{this.amt=Math.max(0,Math.min(9999,this.amt+d));v.textContent=this.amt+'枚';Snd.beep(d>0?700:500,.04,'square',.03)};return b};
   row.append(mk('▼100',-100),mk('▼10',-10),v,mk('▲10',10),mk('▲100',100));row.style.visibility='hidden';$('ev').insertBefore(row,$('evb'))},
- dep(n){const G=GameManager;if(!n){this.say(this.gone?'0枚っすよー。ボタンで枚数決めてくださいー。':'枚数が0枚のようです…。ボタンで枚数を決めてくださいね。',[['戻る',()=>this.bankMenu()],['OK',()=>{}]]);return}if(n>0&&G.credits<n||n<0&&this.bank<-n){this.say(n>0?(this.gone?`手持ちが${n}枚に足りないっすよ。`:`手持ちが${n}枚に足りないようです…。`):(this.gone?`預かりが${-n}枚に足りないっす。`:`お預かりが${-n}枚に足りないようです…。`),[['戻る',()=>this.bankMenu()],['OK',()=>{}]]);return}
+ dep(n){const G=GameManager;if(!n){this.say(this.gone?'0枚っすよー。ボタンで枚数決めてくださいー。':this.sad()?'…0枚、みたいです…。':'枚数が0枚のようです…。ボタンで枚数を決めてくださいね。',[['戻る',()=>this.bankMenu()],['OK',()=>{}]]);return}if(n>0&&G.credits<n||n<0&&this.bank<-n){this.say(n>0?(this.gone?`手持ちが${n}枚に足りないっすよ。`:this.sad()?`…手持ちが${n}枚に足りません…。`:`手持ちが${n}枚に足りないようです…。`):(this.gone?`預かりが${-n}枚に足りないっす。`:this.sad()?`…お預かりが${-n}枚に足りません…。`:`お預かりが${-n}枚に足りないようです…。`),[['戻る',()=>this.bankMenu()],['OK',()=>{}]]);return}
   G.credits-=n;this.bank+=n;G.hud();if(n>0)Ach.do('bank1');
-  this.say(n>0?(this.gone?`${n}枚、預かりましたー。預かり${this.bank}枚っす。`:`${n}枚、お預かりしました。お預かりは${this.bank}枚です。`):(this.gone?`${-n}枚、お返ししまーす。手持ち${G.credits}枚っす。`:`${-n}枚、お返ししました。手持ちは${G.credits}枚です。`),[['続ける',()=>this.bankMenu()],['OK',()=>{}]])},
- prizeMenu(t){this.nc=0;this.say(t||(this.gone?`景品っすねー。手持ち${GameManager.credits}枚っす。`:`景品交換ですね。手持ちは${GameManager.credits}枚です。`),[...this.P.map(([n,c])=>[`${n}(${c}枚)`,()=>this.buyMenu(n,c)]),['戻る',()=>this.menu()]])},
+  this.say(n>0?(this.gone?`${n}枚、預かりましたー。預かり${this.bank}枚っす。`:this.sad()?`…${n}枚、お預かりしました…。お預かりは${this.bank}枚です…。`:`${n}枚、お預かりしました。お預かりは${this.bank}枚です。`):(this.gone?`${-n}枚、お返ししまーす。手持ち${G.credits}枚っす。`:this.sad()?`…${-n}枚、お返しします…。手持ちは${G.credits}枚です…。`:`${-n}枚、お返ししました。手持ちは${G.credits}枚です。`),[['続ける',()=>this.bankMenu()],['OK',()=>{}]])},
+ prizeMenu(t){this.nc=0;this.say(t||(this.gone?`景品っすねー。手持ち${GameManager.credits}枚っす。`:this.sad()?`…景品交換、ですね…。手持ちは${GameManager.credits}枚です…。`:`景品交換ですね。手持ちは${GameManager.credits}枚です。`),[...this.P.map(([n,c])=>[`${n}(${c}枚)`,()=>this.buyMenu(n,c)]),['戻る',()=>this.menu()]])},
  // 景品: ▼▲で買う個数を指定(手持ちで買える範囲)
  buyMenu(n,c){this.nc=0;const G=GameManager,max=Math.max(1,Math.min(99,Math.floor(G.credits/c)));this.qty=Math.min(this.qty||1,max)||1;
-  this.say(this.gone?`${n}は1個${c}枚っす。何個にしますー？（手持ち${G.credits}枚）`:`${n}は1個${c}枚です。いくつ買いますか？（手持ち${G.credits}枚）`,[['買う',()=>this.buy(n,c,this.qty)],['戻る',()=>this.prizeMenu()]]);
+  this.say(this.gone?`${n}は1個${c}枚っす。何個にしますー？（手持ち${G.credits}枚）`:this.sad()?`…${n}は1個${c}枚です…。いくつにしますか…？（手持ち${G.credits}枚）`:`${n}は1個${c}枚です。いくつ買いますか？（手持ち${G.credits}枚）`,[['買う',()=>this.buy(n,c,this.qty)],['戻る',()=>this.prizeMenu()]]);
   const row=document.createElement('div');row.className='stp';row.id='stp';const v=document.createElement('b'),upd=()=>{v.textContent=`${this.qty}個＝${this.qty*c}枚`};upd();
   const mk=(l,d)=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{this.qty=Math.max(1,Math.min(max,this.qty+d));upd();Snd.beep(d>0?700:500,.04,'square',.03)};return b};
   row.append(mk('▼1',-1),v,mk('▲1',1));row.style.visibility='hidden';$('ev').insertBefore(row,$('evb'))},
- buy(n,c,q=1){const G=GameManager;if(G.credits<c*q){this.prizeMenu(this.gone?'メダル足りないっすよー。':'メダルが足りないようです…。');return}
+ buy(n,c,q=1){const G=GameManager;if(G.credits<c*q){this.prizeMenu(this.gone?'メダル足りないっすよー。':this.sad()?'…メダルが足りないみたいです…。':'メダルが足りないようです…。');return}
   G.credits-=c*q;this.prizes[n]=(this.prizes[n]||0)+q;this.qty=1;G.hud();Got.show(q>1?`${n}×${q}`:n);Ach.do('prize1');this.got=this.got||{};this.got[n]=1;if(Object.keys(this.got).length>=this.P.length)Ach.do('prizeall');Snd.seq([784,988]);
-  this.say(this.gone?`${n}${q>1?`を${q}個`:''}っすね。まいどー。`:`${n}${q>1?`を${q}個`:''}ですね。ありがとうございました！`,[['続ける',()=>this.prizeMenu()],['OK',()=>{}]])},
+  this.say(this.gone?`${n}${q>1?`を${q}個`:''}っすね。まいどー。`:this.sad()?`…${n}${q>1?`を${q}個`:''}ですね…。ありがとうございます…。`:`${n}${q>1?`を${q}個`:''}ですね。ありがとうございました！`,[['続ける',()=>this.prizeMenu()],['OK',()=>{}]])},
  // 世間話のレパートリー(好感度・昇進の話で変わる)。最初に見た時点のものは「既知」とし、あとから増えた未読があれば「New!」を出す
  T2:['前の店では、新台入替の担当をしていました。','景品の在庫は、ちゃんと把握していますので、ご安心ください。','最近、夜の冷え込みが厳しいですね。お体に気をつけてください。','前任の方は、とても慕われていたと聞いています。…僕も見習わないと。','メダルの預け入れは、計画的にどうぞ。…って、説教くさいですかね。','お店の鍵の場所、まだ覚えきれてなくて…。内緒にしてください。'],
- pool(){if(this.gone)return this.T2;let p=[...this.T,...(this.love>=1?this.L1:[]),...(this.love>=2?this.L2:[]),...(this.love>=3?this.L3:[]),...(this.love>=5?this.L4:[]),...(this.love>=7?this.L5:[])];
+ // お別れの話のあとに「なんでもない」を5回以上繰り返すと起こる場面(一度だけ)
+ // 好意がにじむセリフ: 「人生相談→ぬいぐるみ」のイベントを終えるまでは、世間話に出ない
+ AFF:['あなたが来てくれると、ちょっと嬉しいんです。…あ、お客さんとして、ですよ？','最近、お客さんが来るのを、ちょっとだけ待ってる自分がいて…。…気のせいです！','ありがとうございます。お客さんが来てくれると、毎日が少しだけ楽しいです。','お菓子、実は甘いものに目がなくて…。…あ、今のは忘れてください！'],
+ // 好感度による仕様の変更(世間話の増加・渡すメニュー・イベント発生)は、日付が変わってから反映する: lv=反映済みの好感度(love=内部の好感度)
+ lv:0,given:null,sd:undefined,
+ givenToday(n){return !!this.given&&this.given.d===Day.n&&!!this.given.it[n]},
+ markGiven(n){if(!this.given||this.given.d!==Day.n)this.given={d:Day.n,it:{}};this.given.it[n]=1;this.given.last=n},
+ late(){return this.sd===undefined||Day.n>this.sd}, // 段階が進んだ日の翌日以降か
+ refuse(n){const L={'缶ジュース':['先程いただいたジュースがあるので…。','もう頂いた分で十分ですよ！？'],'お菓子の詰め合わせ':['お菓子は先程いただいたので…。','もう頂いた分で十分ですよ！？'],'ぬいぐるみ':['ぬいぐるみは、もうこの子で十分ですよ！？','先程いただいたので…。']}[n]||['もう頂いた分で十分ですよ！？'];
+  this.say(L[Math.floor(Math.random()*L.length)],[['戻る',()=>this.give()],['OK',()=>{}]])},
+ lifeStage:0, // 0=未発生 1=人生相談を済ませた(ぬいぐるみ待ち) 2=ぬいぐるみを渡した
+ // 缶ジュースを3本渡したあとの世間話で発生: 人生相談(家計・夢の悩み)→景品のぬいぐるみをプレゼント→初めて好意を見せる→(次の缶ジュースで)お菓子のイベントへ
+ life(){const E=EventManager;this.nc=0;
+  E.show('staff','あの…お客さん。少しだけ、相談に乗ってもらえませんか？',[['いいよ',()=>this.life2()],['今はちょっと…',()=>E.show('staff','あ…そうですよね。すみません、忘れてください。',[['OK',()=>{}]])]])},
+ life2(){this.talk(['こんなこと、本当ならお客さんに話すことじゃないんですけど…。','なんだか誰かに話したいって思って…。','仕事仲間に話すのもなんだか、向こうも荷が重いだろうし…。','でもお客さんなら、いいかな？って思うんです。','多分関係が浅いからですかね？','それで本題なんですけど…。','うちの実家、あまり裕福じゃなくて…。','弟の学費もあるので、私がこの仕事で、仕送りをしてるんです。','…それは、全然、苦じゃないんです。家族ですし。','でも本当は、昔から服を作る仕事に憧れてて…。','専門学校に行って、ちゃんと勉強したいなって、思ってたんですけど…。','今からお金と時間を使うのは、わがままなのかなって…。'],0,
+  ()=>EventManager.show('staff','…お客さんは、どう思いますか？',[['夢を追ってみたら？',()=>this.life4(0)],['今は家族を優先しよう',()=>this.life4(1)],['どっちもやればいい',()=>this.life4(2)]]))},
+ life4(k){this.lifeAdvice=k;
+  const R=[['夢を…追う、ですか。','…そうですよね。諦めるって、決めたわけじゃないんですよね。','ちょっとずつ貯金して、通信とかで勉強するのも、ありかも…。'],
+   ['…そうですね。家族のために働くのも、私の大事な一部ですよね。','夢は、今すぐじゃなくても、なくなるわけじゃないですし。'],
+   ['どっちも…ですか。ふふ、欲張りですね。','でも…どっちも諦めないって、悪くないかもしれません。']][k];
+  this.talk([...R,'…話を聞いてもらえて、少し気持ちが軽くなりました。ありがとうございます。','…あ、すみません。つい長話を。お仕事に戻りますね。'],0,()=>{this.lifeStage=1;this.sd=Day.n;Ach.do('life');GameManager.say('スタッフの悩みを聞いた…')})},
+ // 人生相談のあと、次に缶ジュースをもらったとき: また愚痴をこぼし、「普通は何をプレゼントする？」と聞く→感謝して去る。ここで初めて好意を見せる
+ vent(){this.talk(['あ…ジュース、ありがとうございます。','…すみません、ちょっとまた愚痴っぽくなるんですけど…。','うち、前に話した通り家計が厳しくて…。','だから、プレゼントとか、ほとんど貰ったことがないんです。'],0,
+  ()=>EventManager.show('staff','…お客さんなら、普通はどんなものをプレゼントしますか？',[['おもちゃ',()=>this.vent2(0)],['本',()=>this.vent2(1)],['気持ち',()=>this.vent2(2)]]))},
+ vent2(k){const R=[['おもちゃ…！ ふふ、正にって感じですね。','お客さんらしいというか…。'],['本、ですか。…意外と文学系なんですか？','ちょっとイメージと違いました。'],['気持ち…ですか。','…お客さん、ロマンチストなんですね。']][k];
+  this.talk([...R,'…友達は、ぬいぐるみとか買ってもらってて、羨ましかったんですよね。','…あ、すみません。結局、また愚痴っちゃいました。','でも、聞いてくれて、ありがとうございます。','…そ、それじゃ、お仕事に戻りますね！'],0,()=>{this.lifeStage=2;this.sd=Day.n;Ach.do('vent');GameManager.say('スタッフの愚痴を聞いた。…ぬいぐるみが羨ましかったらしい')})},
+ // 景品のぬいぐるみを渡す: ここで初めて好意を見せる(これ以降、スタッフの様子が変わる)
+ plush(){const G=GameManager;if(--this.prizes['ぬいぐるみ']<=0)delete this.prizes['ぬいぐるみ'];G.hud();this.markGiven('ぬいぐるみ');this.sd=Day.n;this.lifeStage=3;this.lifeDone=true;this.love++;Ach.do('plush');Snd.seq([784,988,1175,1568]);
+  this.talk(['えっ…これ、私に…ですか？','…ぬいぐるみ。','…プレゼントなんて、もらったの、いつぶりだろう。','ずっと、そういうのとは縁がなかったので…。','…ありがとうございます。大事にしますね。','…お客さんって、優しいんですね…。'],0,()=>G.say('スタッフにぬいぐるみを渡した。…少し、様子が変わった気がする'))},
+ sad(){return !!this.lastTalk&&!this.gone},
+ cry(){this.cried=true;Ach.do('cry');this.cryStep(0)},
+ cryStep(i){const L=['…。','はじめてジュースをくれた日も…','お客さんはそうやって私の気を引いてくれましたよね…。','なんだか、そんな昔の話でもないのに…なんだか懐かしい。','…あたたかいです。あなたといると…。','…ひっ……ひぐっ……','…や、やっぱり…','お別れしたくないですっ……'];
+  if(i<L.length-1)this.say(L[i],[['▶',()=>this.cryStep(i+1)]]);
+  else this.say(L[i],[['そっとする',()=>this.cryEnd(0)],['抱きしめる',()=>this.cryEnd(1)],['ハンカチを貸す',()=>this.cryEnd(2)]])},
+ cryEnd(k){Ach.do(['crysoft','cryhug','crycloth'][k]);
+  this.talk([['…。','…何も言わないでいてくれるんですね。','…それが、いちばん嬉しいです。','ありがとうございます。…もう、大丈夫です。'],
+   ['……！','…あ、あの…。','…あったかい…。','…ほんの少しだけ、このままで…。','…ありがとうございます。…もう、大丈夫です。'],
+   ['…あ、ありがとうございます…。','…ぐすっ。ちゃんと洗って返しま…','…って、もう、お会いできないんでした。','…このハンカチ、大事にしますね。','ありがとうございます。…もう、大丈夫です。']][k],0,()=>{})},
+ pool(){if(this.gone)return this.T2;let p=[...this.T,...(this.lv>=1?this.L1:[]),...(this.lv>=2?this.L2:[]),...(this.lv>=3?this.L3:[]),...(this.lv>=5?this.L4:[]),...(this.lv>=7?this.L5:[])];
+  if(!this.lifeDone)p=p.filter(t=>!this.AFF.includes(t));
+  if(this.lifeStage===1)p.push('なんだか今日は、喉が渇いちゃいますね…。');
   if(this.promoDone){const ex=['私、実はこのお店に入ってまだ3か月なんです。','あなたが来てくれると、ちょっと嬉しいんです。…あ、お客さんとして、ですよ？','最近、お客さんが来るのを、ちょっとだけ待ってる自分がいて…。…気のせいです！','ありがとうございます。お客さんが来てくれると、毎日が少しだけ楽しいです。'];
    p=p.filter(t=>!ex.includes(t));p.push('…。','…そんな顔しないでください！ほら、笑顔ですよ。')}
   return p},
  hasNew(){if(!this.baseSet)return false;return this.pool().some(t=>!this.baseSet.has(t)&&!this.seenSet.has(t))},
  angry(){const E=EventManager,G=GameManager;Ach.do('listen');Snd.seq([220,196,165]);Moon.shake(7);setTimeout(()=>Moon.shake(0),300);
   E.show('staff','ちゃんと聞いてください！！',[['はい…',()=>{G.say('スタッフに、ちゃんと聞くよう怒られた…')}]],{big:true,noskip:true,speed:90})}, // 「もう少し話す」を連打すると、スキップ不能の大きなテキストボックスで怒られる
- chat(chained){if(this.gone){this.say('えー、オレちょっと忙しいんで後でいいすかァ。',[['OK',()=>{}]]);return} /* 男性スタッフは世間話を断る */
+ chat(chained){if(this.lastTalk&&!this.gone){this.nc=0;this.say('…。',[['OK',()=>{}]]);return} /* お別れの話のあとは「…。」だけ */
+  if(this.gone){this.say('えー、オレちょっと忙しいんで後でいいすかァ。',[['OK',()=>{}]]);return} /* 男性スタッフは世間話を断る */
+  if(!this.promoDone&&this.given&&this.given.d===Day.n&&this.given.last){const F={'缶ジュース':'(150mlのジュースを忙しなくちびちびと飲んでいる…。)','お菓子の詰め合わせ':'(お菓子の袋を誰にも取られまいと大事そうに抱えている…。)','ぬいぐるみ':'(無意識だろうか、ぬいぐるみを撫でながら軽快に店の中を歩いている…。)'};this.nc=0;EventManager.show('narr',F[this.given.last]||'(忙しそうにしている…。)',[['OK',()=>{}]]);return} /* 品物をあげた日は、それ以上話しかけられない */
   const now=performance.now();if(chained&&this.lt&&now-this.lt<1000)this.cq=(this.cq||0)+1;else this.cq=0;this.lt=now;if(this.cq>=5){this.cq=0;this.angry();return}
+  // 好感度が初期値(缶ジュースを渡す前)の世間話: 戸惑いながら、3回目まで決まったセリフ→以降は「(困ったなあ…)」
+  if(this.lv<=0&&!this.promoDone&&!this.lastTalk){const n=this.coldN|0;this.coldN=n+1;this.say(['私とお話し…ですか？','えーっと…、いい天気ですね？','く、暗いですね…あはは…。'][n]||'(困ったなあ…)',[['もう少し話す',()=>this.chat(true)],['OK',()=>{}]]);return}
+  // 缶ジュースをあげたあとの、最初の世間話: 渋々付き合うところから始まり、そのまま通常の世間話へ続く
+  if(!chained&&this.lv>=1&&!this.firstChatDone&&!this.promoDone&&!this.lastTalk){this.firstChatDone=true;this.talk(['私とお話し…？','…うぅん、いやまぁ…。','…ジュース分くらいなら付き合いますが…。','世間話…そうですね……。'],0,()=>this.chat(true));return}
+  if(!chained&&this.lv>=3&&!this.lifeStage&&!this.promoDone){this.life();return}
   if(!chained&&(Ach.c.movies||0)>=5&&!this.promoDone){this.promoAsk();return}
+  // 前任スタッフがいなくなる前の日の世間話: 最後のお別れ(一度だけ)
+  if(!chained&&this.promoDone&&!this.gone&&!this.lastTalk&&Day.n-(this.promoDay||Day.n)>=4){this.lastTalk=true;this.farewell=true;Ach.do('lastday');
+   this.talk(['あの…最後に、改めてお礼を言わせてください。','いつも来てくださって、本当にありがとうございました。','私、お金に困ってこの仕事を始めたんです。','大変なことも多くて、何度も辞めたいって思いました。','でも、あなたに会えたから…。この仕事をしてて、よかったです。','昇進のことも、本当に嬉しいお話なんです。','でも、新しいお店はすごく遠くて…。もう、お会いすることは、ないと思います。','…どうか、お元気で。','それでは、…さようなら。'],0,()=>{});return}
   if(!chained&&this.promoDone&&!this.farewell&&!this.gone){this.farewell=true;this.talk(['寂しくなっちゃいますね。','でも、その日までいつも通りに','その方が、楽しくお別れできるので！'],0,()=>{});return} /* 昋進の話の直後の世間話で、一度だけ */ // 映画に5回以上行ったあとの世間話で、スタッフから声をかけられる
   this.nc=0;Ach.add('chat');const p=this.pool();
-  let i;do i=Math.floor(Math.random()*p.length);while(i===this.last&&p.length>1);this.last=i;this.seenSet.add(p[i]);this.say(p[i],[['もう少し話す',()=>this.chat(true)],['OK',()=>{}]])}};
+  // 「New!」が付いていてまだ聞いていないセリフが残っていれば、85%の確率でそこから選ぶ
+  const isNew=t=>!!this.baseSet&&!this.baseSet.has(t)&&!this.seenSet.has(t);
+  const nl=p.map((t,k)=>k).filter(k=>isNew(p[k])&&!(k===this.last&&p.length>1));
+  let i;if(nl.length&&Math.random()<.85)i=nl[Math.floor(Math.random()*nl.length)];
+  else{do i=Math.floor(Math.random()*p.length);while(i===this.last&&p.length>1)}
+  this.last=i;this.seenSet.add(p[i]);this.say(p[i],[['もう少し話す',()=>this.chat(true)],['OK',()=>{}]])}};
 $('staff').onclick=()=>{const G=GameManager;if(G.phase!=='idle'||EventManager.open)return G.say('リール停止後・会話終了後に呼んでください');Staff.call()};
 
 // ===== 強制出勤の電話(1回転ごとに5%) =====
@@ -1091,7 +1167,7 @@ const Moon={W:82,H:107,on:false,raf:0,last:0,t:0,jy:0,vy:0,st:'idle',sT:0,fa:0,h
  stop(){this.on=false;cancelAnimationFrame(this.raf);this.raf=0;this.shake(0);this.clearFX();$('mbub').hidden=true}};
 $('moonbtn').onclick=()=>view('o');
 addEventListener('pointerdown',()=>{Moon.idleT=0});addEventListener('keydown',()=>{Moon.idleT=0});
-$('sigbtn').onclick=()=>{Sky.red=!Sky.red;Sky.jamSpins=0;if(!Sky.red&&Sky.gj&&!Sky.flying)Sky.launch();Snd.beep(Sky.red?300:640,.06,'square',.05);Ach.add('sig');if(!Sky.raf)Sky.draw()};$('moon-home').onclick=()=>view('m');
+$('sigbtn').onclick=()=>{Sky.red=!Sky.red;Sky.jamSpins=0;Sky.redDays=0;Sky.mineRed=false;if(!Sky.red&&Sky.gj&&!Sky.flying)Sky.launch();Snd.beep(Sky.red?300:640,.06,'square',.05);Ach.add('sig');if(!Sky.raf)Sky.draw()};$('moon-home').onclick=()=>view('m');
 
 // ===== やみきん(500〜5000枚を借りられる) =====
 function typeWave(el,text,onDone,quiet){clearInterval(el._ty);el._next=null;el._done=false;el._wait=false;el._onDone=onDone||null;el.classList.remove('wt');
@@ -1240,7 +1316,7 @@ $('dbgcar').onclick=()=>{const G=GameManager;if(!Yami.ready())return G.say('リ�
  if(!Sky.cars.some(k=>k.gm)){const o=Sky.cars.filter(k=>!k.extra);o[Math.floor(Math.random()*o.length)].gm=true;Ach.do('gaming1')}else G.say('ゲーミングカーはすでに道路にいる');
  $('dbg').style.display='none';view('m')};
 $('ymn').onclick=()=>{const G=GameManager;if(!Yami.ready())return G.say('リール停止後・会話終了後に誘発してください');if(!Yami.debt){Yami.pr=500;Yami.debt=550}$('dbg').style.display='none';view('k')};
-const lvSet=n=>{Staff.love=Math.max(0,n);if(Staff.love>=3)Ach.do('love3');if(Staff.love>=6)Ach.do('love6');GameManager.say(`スタッフ好感度: ${Staff.love}`)};
+const lvSet=n=>{Staff.love=Math.max(0,n);Staff.lv=Staff.love;if(Staff.love>=3)Ach.do('love3');if(Staff.love>=6)Ach.do('love6');GameManager.say(`スタッフ好感度: ${Staff.love}`)};
 $('lvm').onclick=()=>lvSet(Staff.love-1);$('lvp').onclick=()=>lvSet(Staff.love+1);$('lv3').onclick=()=>lvSet(3);$('lv7').onclick=()=>lvSet(7);
 $('snk').onclick=()=>{Staff.hinted=true;Staff.snackOn=true;GameManager.say('お菓子を渡せるようにした')};
 $('lkf').onclick=()=>{GameManager.forceLucky=true;GameManager.say('次のゲームはLUCKY確定（BIGかREG）')};
@@ -1407,6 +1483,14 @@ const AL=[ // [id, グループ, タイトル, 説明, カウンター名, 目�
  ['movie1','スタッフ','初めての映画','スタッフと映画に行った'],
  ['movie2','スタッフ','仕事終わりの映画','仕事終わりにスタッフに誘われて、映画に行った'],
  ['movies5','スタッフ','映画仲間','スタッフと累計5回映画に行った','movies',5],
+ ['life','隠し','人生相談','スタッフの悩み(家計と夢のこと)を聞いた',0,0,1],
+ ['vent','隠し','愚痴の聞き役','スタッフの愚痴を、もう一度聞いてあげた',0,0,1],
+ ['plush','隠し','はじめてのプレゼント','スタッフにぬいぐるみをプレゼントした',0,0,1],
+ ['cry','隠し','ずるいひと','お別れの前の日、スタッフを泣かせてしまった',0,0,1],
+ ['crysoft','隠し','そっと','泣いているスタッフを、そっとしておいた',0,0,1],
+ ['cryhug','隠し','ぎゅっ','泣いているスタッフを、抱きしめた',0,0,1],
+ ['crycloth','隠し','ハンカチ','泣いているスタッフに、ハンカチを貸した',0,0,1],
+ ['lastday','隠し','さよならの前の日','前任スタッフとの、最後の世間話を聞いた',0,0,1],
  ['staffgone','隠し','入れ替わり','昇進の話から5日後、別の男性スタッフがやってきた',0,0,1],
  ['promo','隠し','昇進の知らせ','スタッフから、他店舗の店長に昇進すると聞いた',0,0,1],
  ['snackhint','隠し','媚びてはいけません','好感度が高いスタッフに、またジュースを渡して、お菓子をねだられた',0,0,1],
@@ -1430,6 +1514,7 @@ const AL=[ // [id, グループ, タイトル, 説明, カウンター名, 目�
  ['mistake1','おしごと','ごめんなさい','注文を初めて間違えた'],
  ['correct','おしごと','あ、違った','上司の注文の訂正を聞いた'],
  ['early','おしごと','もう帰るのか？','5回以下の注文で退勤した'],
+ ['scold','おしごと','入口でうろうろ','仕事をせずに帰ることを繰り返して、上司に呼び止められた',0,0,1],
  ['perfect','おしごと','あっぱれ','評価「あっぱれ」を取った'],
  ['fired','おしごと','クビ','評価「クビ」を取った'],
  ['drink','おしごと','付き合い','上司の飲みの誘いに乗った'],
@@ -1513,6 +1598,9 @@ Ach.render();
 
 // ===== マップで見知らぬ人に「今幸せですか？」と聞かれる(マップに出たとき5%) =====
 const Happy={
+ // 幸せ関連の実績(5つ)がそろうまでは、マップに入るたびに10%で話しかけてくる(お告げを待っている間と、そろったあとは出ない)
+ need(){return ['happy_ask','happy_no','happy_hate','happy_like','thanks'].some(id=>!Ach.got[id])},
+ chance(){return this.need()&&!this.omen?.1:0},
  later(){Sky.navLock=true;Gate.ready(()=>setTimeout(()=>{if($('mapv').hidden||EventManager.open||Phone.active){Sky.navLock=false;return}this.ask()},700))},
  ask(){const E=EventManager;Ach.do('happy_ask');E.show('stranger','「今幸せですか？」',[['幸せ',()=>this.like()],['幸せじゃない',()=>this.sad()]])},
  // 幸せじゃない→慰めて、メダルを1枚くれる
@@ -1532,16 +1620,16 @@ const Save={KEY:'luckyjug-save-v1',t:0,ok:true,off:false,
   g:{cr:GameManager.credits,free:GameManager.free},set:SettingManager.cur,
   st:{games:StatisticsManager.games,big:StatisticsManager.big,reg:StatisticsManager.reg,grape:StatisticsManager.grape,cherry:StatisticsManager.cherry,replay:StatisticsManager.replay},
   bn:BonusManager.cur,
-  sf:{bank:Staff.bank,prizes:Staff.prizes,love:Staff.love,got:Staff.got||{},cool:Staff.cool,sulk:Staff.sulk,hinted:Staff.hinted,snackOn:Staff.snackOn,snackN:Staff.snackN,snackGiven:Staff.snackGiven,ticket:Staff.ticket,movieDone:Staff.movieDone,promoDone:Staff.promoDone,farewell:Staff.farewell,base:Staff.baseSet?[...Staff.baseSet]:null,seen:[...Staff.seenSet],promoDay:Staff.promoDay,gone:Staff.gone,greeted:Staff.greeted},
+  sf:{bank:Staff.bank,prizes:Staff.prizes,love:Staff.love,got:Staff.got||{},cool:Staff.cool,sulk:Staff.sulk,hinted:Staff.hinted,snackOn:Staff.snackOn,snackN:Staff.snackN,snackGiven:Staff.snackGiven,ticket:Staff.ticket,movieDone:Staff.movieDone,promoDone:Staff.promoDone,farewell:Staff.farewell,base:Staff.baseSet?[...Staff.baseSet]:null,seen:[...Staff.seenSet],promoDay:Staff.promoDay,gone:Staff.gone,greeted:Staff.greeted,lastTalk:Staff.lastTalk,cried:Staff.cried,lifeStage:Staff.lifeStage,lv:Staff.lv,given:Staff.given,sd:Staff.sd,coldN:Staff.coldN|0,firstChatDone:!!Staff.firstChatDone,sendoffDone:!!Staff.sendoffDone,lifeDone:Staff.lifeDone,lifeAdvice:Staff.lifeAdvice},
   ev:{loan:EventManager.loan},
   y:{debt:Yami.debt,pr:Yami.pr,spins:Yami.spins,cs:Yami.cs,waits:Yami.waits,amt:Yami.amt,lim:Yami.lim},
   ph:{forced:Phone.forced,ign:Phone.ign,visit:Phone.visit,vsp:Phone.vsp},
   h:{lv:Hero.lv,exp:Hero.exp,hp:Hero.hp,atk:Hero.atk,def:Hero.def,stones:Hero.stones,met:Hero.met,explained:Hero.explained,up:Hero.up},
   mo:{seen:Moon.seen,flagLost:Moon.flagLost,flagLanded:Moon.flagLanded,meteorSeen:Moon.meteorSeen,carLanded:Moon.carLanded},
-  sk:{red:Sky.red,launched:Sky.launched,jamSpins:Sky.jamSpins,gm:Sky.cars?Sky.cars.some(k=>k.gm):!!Sky._gm},
+  sk:{red:Sky.red,launched:Sky.launched,jamSpins:Sky.jamSpins,redDays:Sky.redDays|0,mineRed:!!Sky.mineRed,gm:Sky.cars?Sky.cars.some(k=>k.gm):!!Sky._gm},
   hp:{omen:Happy.omen,n:Happy.omenN,at:Happy.omenAt},
   jb:{ok:JobManager.ok,ng:JobManager.ng,drink:JobManager.drink},
-  ach:{got:Ach.got,c:Ach.c,vis:Ach.vis},dy:Day.n}},
+  ach:{got:Ach.got,c:Ach.c,vis:Ach.vis},dy:Day.n,ih:JobManager.ih|0,wk:JobManager.wk|0}},
  save(){if(this.off)return false;try{localStorage.setItem(this.KEY,JSON.stringify(Object.assign(this.snap(),{t:Date.now()})));this.t=Date.now();this.ok=true;return true}catch(e){this.ok=false;return false}},
  load(){try{const r=localStorage.getItem(this.KEY);if(!r)return false;this.apply(JSON.parse(r));GameManager.say('セーブデータを読み込んだ');return true}catch(e){return false}},
  apply(d){const G=GameManager;
@@ -1549,17 +1637,19 @@ const Save={KEY:'luckyjug-save-v1',t:0,ok:true,off:false,
   if(d.set)SettingManager.cur=d.set;
   if(d.st)Object.assign(StatisticsManager,d.st);
   if(d.bn){BonusManager.cur=d.bn;$('lamp').classList.add('on')}
-  if(d.sf){Staff.bank=d.sf.bank|0;Staff.prizes=d.sf.prizes||{};Staff.love=d.sf.love|0;Staff.got=d.sf.got||{};Staff.cool=d.sf.cool|0;Staff.sulk=!!d.sf.sulk;Staff.hinted=!!d.sf.hinted;Staff.snackOn=!!d.sf.snackOn;Staff.snackN=d.sf.snackN|0;Staff.snackGiven=!!d.sf.snackGiven;Staff.ticket=!!d.sf.ticket;Staff.movieDone=!!d.sf.movieDone;Staff.promoDone=!!d.sf.promoDone;Staff.farewell=!!d.sf.farewell;Staff.promoDay=d.sf.promoDay|0;Staff.gone=!!d.sf.gone;Staff.greeted=!!d.sf.greeted;if(d.sf.base)Staff.baseSet=new Set(d.sf.base);if(d.sf.seen)Staff.seenSet=new Set(d.sf.seen)}
+  if(d.sf){Staff.bank=d.sf.bank|0;Staff.prizes=d.sf.prizes||{};Staff.love=d.sf.love|0;Staff.got=d.sf.got||{};Staff.cool=d.sf.cool|0;Staff.sulk=!!d.sf.sulk;Staff.hinted=!!d.sf.hinted;Staff.snackOn=!!d.sf.snackOn;Staff.snackN=d.sf.snackN|0;Staff.snackGiven=!!d.sf.snackGiven;Staff.ticket=!!d.sf.ticket;Staff.movieDone=!!d.sf.movieDone;Staff.promoDone=!!d.sf.promoDone;Staff.farewell=!!d.sf.farewell;Staff.promoDay=d.sf.promoDay|0;Staff.gone=!!d.sf.gone;Staff.lastTalk=!!d.sf.lastTalk;Staff.cried=!!d.sf.cried;Staff.greeted=!!d.sf.greeted;Staff.lifeStage=d.sf.lifeStage|0;Staff.coldN=d.sf.coldN|0;Staff.sendoffDone=d.sf.sendoffDone!==undefined?!!d.sf.sendoffDone:!!Staff.snackGiven;Staff.lv=d.sf.lv!==undefined?d.sf.lv|0:Staff.love;Staff.given=d.sf.given||null;Staff.sd=d.sf.sd!=null?d.sf.sd|0:undefined;Staff.firstChatDone=d.sf.firstChatDone!==undefined?!!d.sf.firstChatDone:Staff.love>=1;Staff.lifeAdvice=d.sf.lifeAdvice;Staff.lifeDone=d.sf.lifeDone!==undefined?!!d.sf.lifeDone:(!!Staff.snackGiven||!!Staff.promoDone);if(Staff.lifeDone&&Staff.lifeStage<3)Staff.lifeStage=3;if(d.sf.base)Staff.baseSet=new Set(d.sf.base);if(d.sf.seen)Staff.seenSet=new Set(d.sf.seen)}
   if(d.ev)EventManager.loan=d.ev.loan||null;
   if(d.y)Object.assign(Yami,d.y);
   if(d.ph){Phone.forced=!!d.ph.forced;Phone.ign=d.ph.ign|0;Phone.visit=!!d.ph.visit;Phone.vsp=d.ph.vsp|0}
   if(d.h)Object.assign(Hero,d.h);
   if(d.mo)Object.assign(Moon,d.mo);
-  if(d.sk){Sky.red=!!d.sk.red;Sky.launched=!!d.sk.launched;Sky.jamSpins=d.sk.jamSpins|0;Sky._gm=!!d.sk.gm}
+  if(d.sk){Sky.red=!!d.sk.red;Sky.launched=!!d.sk.launched;Sky.jamSpins=d.sk.jamSpins|0;Sky.redDays=d.sk.redDays|0;Sky.mineRed=!!d.sk.mineRed;Sky._gm=!!d.sk.gm}
   if(d.hp){Happy.omen=!!d.hp.omen;Happy.omenN=d.hp.n|0;Happy.omenAt=d.hp.at|0}
   if(d.jb){JobManager.ok=d.jb.ok|0;JobManager.ng=d.jb.ng|0;JobManager.drink=!!d.jb.drink;$('j-ok').textContent=JobManager.ok;$('j-ng').textContent=JobManager.ng}
   if(d.ach){Ach.got=d.ach.got||{};Ach.c=d.ach.c||{};Ach.vis=d.ach.vis||{s:1}}
-  if(d.dy)Day.n=d.dy|0;
+  // 整合: ぬいぐるみを渡していない(実績なし・お菓子も昇進も未)のに「済み」やお菓子の話の準備になっていたら、人生相談の流れからやり直せる状態に戻す
+  if(d.sf&&!Staff.snackGiven&&!Staff.promoDone&&!Ach.got.plush){Staff.lifeDone=false;Staff.hinted=false;Staff.snackOn=false;Staff.lifeStage=Ach.got.vent?2:(Ach.got.life?1:0)}
+  if(d.dy)Day.n=d.dy|0;JobManager.ih=d.ih|0;JobManager.wk=d.wk|0;
   $('set').value=SettingManager.cur;Yami.render()},
  clear(){this.off=true;try{localStorage.removeItem(this.KEY)}catch(e){}},
  info(){const i=$('save-info');i.textContent=this.ok?`オートセーブ: ON（5秒ごと） / 最終セーブ: ${this.t?new Date(this.t).toLocaleTimeString():'まだ'}`:'この環境ではセーブできません（ブラウザの保存が無効）'},
@@ -1643,7 +1733,8 @@ const DayFX={on:false,run:false,t:0,raf:0,last:0,B:[[0,9,18],[10,8,26],[19,11,14
   c.fillStyle=on?'#ffe28c':'#4a4a55';c.fillRect(lx-1,14,3,2);
   c.fillStyle='#d8d8e8';c.fillRect(lx+4,14,1,Math.round(10+pull));c.fillRect(lx+3,Math.round(24+pull),3,3)}};
 const Day={n:1,
- next(toMap){this.n++;Ach.add('days');if(Staff.promoDone&&!Staff.gone&&this.n-(Staff.promoDay||this.n)>=5){Staff.gone=true;Staff.greeted=false;Staff.cool=0;Staff.sulk=false} /* 昇進の話から5日後、スタッフが入れ替わる */
+ next(toMap){this.n++;Staff.lv=Staff.love;JobManager.wk=0;
+  if(Sky.red){Sky.redDays=(Sky.redDays|0)+1;if(Sky.redDays>=2)Sky.jamSpins=Math.max(Sky.jamSpins|0,10)}else Sky.redDays=0; /* 赤信号のまま2日たつと大渋滞 */Ach.add('days');if(Staff.promoDone&&!Staff.gone&&this.n-(Staff.promoDay||this.n)>=5){Staff.gone=true;Staff.greeted=false;Staff.cool=0;Staff.sulk=false} /* 昇進の話から5日後、スタッフが入れ替わる */
   const el=$('daycard');
   // 自動ドアが閉じる→(裏でマップへ切り替え)→ドアが開く→月が沈み、日めくりがめくれて曜日が変わり、朝日が昇る→フェードでマップへ
   DoorFX.run('次の日',()=>{DayFX.reset((this.n-1)%7,this.n%7);el.style.transition='none';el.hidden=false;el.classList.add('on');if(toMap)view('m',null,{nodoor:true});DayFX.start(450)});
@@ -1677,6 +1768,8 @@ const Alley={on:false,t:0,raf:0,last:0,dim:0,dimT:0,drops:[],rip:[],spl:[],sp:0,
   this.rip.forEach(r=>{const k=r.t/.9;c.strokeStyle=`rgba(200,220,255,${.8*(1-k)})`;c.lineWidth=1;c.beginPath();c.ellipse(r.x,r.y,1+k*7,.5+k*2,0,0,7);c.stroke()});
   c.fillStyle='rgba(200,220,255,.75)';this.spl.forEach(p=>c.fillRect(Math.round(p.x),Math.round(p.y),1,1));
   c.fillStyle=`rgba(0,0,10,${this.dim*.35})`;c.fillRect(0,0,W,H)}};
+$('lifed').onclick=()=>{const G=GameManager;Staff.firstChatDone=true;Staff.gone=false;Staff.promoDone=false;Staff.lastTalk=false;Staff.cried=false;Staff.cool=0;Staff.sulk=false;Staff.love=Math.max(3,Staff.love);Staff.lv=Staff.love;Staff.sd=undefined;Staff.given=null;Staff.lifeStage=0;Staff.lifeDone=false;Staff.hinted=false;Staff.snackOn=false;Staff.prizes['缶ジュース']=Math.max(2,Staff.prizes['缶ジュース']||0);Staff.prizes['ぬいぐるみ']=Math.max(1,Staff.prizes['ぬいぐるみ']||0);CAST.staff.n='スタッフ';G.hud();$('dbg').style.display='none';G.say('人生相談を誘発できる状態にしました(缶ジュース2本・ぬいぐるみ1個を持たせました)。世間話→相談→缶ジュースを渡す→ぬいぐるみを渡す、の順です')};
+$('lastd').onclick=()=>{const G=GameManager;Staff.gone=false;Staff.greeted=false;Staff.promoDone=true;Staff.promoDay=Day.n-4;Staff.lastTalk=false;Staff.cried=false;Staff.farewell=true;Staff.cool=0;Staff.sulk=false;CAST.staff.n='スタッフ';$('dbg').style.display='none';G.say('お別れの前の日になりました。スタッフを呼んで世間話をしてください')};
 $('mvp').onclick=()=>{const G=GameManager;if(!Yami.ready())return G.say('リール停止後・会話終了後に誘発してください');Ach.c.movies=Math.max(5,Ach.c.movies||0);Staff.promoDone=false;$('dbg').style.display='none';Staff.promoAsk()};
 
 // ===== 「○○を手に入れた！」(おしごと以外でメダルや物品をもらったとき。長いときは「○○を」で改行) =====
