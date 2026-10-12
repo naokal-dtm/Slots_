@@ -676,7 +676,7 @@ const JobManager={names:['佐藤','鈴木','高橋','田中','伊藤','渡辺','
   (this.rt||[]).forEach(clearTimeout);this.rt=[];$('jrl').innerHTML='';
   rows.forEach((h,i)=>this.rt.push(setTimeout(()=>{const d=document.createElement('div');d.innerHTML=h;const e=d.firstChild;e.classList.add('in');$('jrl').appendChild(e);Snd.beep(600+i*60,.06,'square',.04);
    if(i===rows.length-1){if(inv)this.invite();else this.fin();Snd.seq(tot>5&&rate>=50||b?[660,880,1320]:[440,330])}},i*650)))}};
-JobManager.build();$('jpunch').onclick=()=>JobManager.punch();$('jquit').onclick=()=>JobManager.quit();$('jm-in').onclick=()=>{$('jmodal').hidden=true;JobManager.idle()};$('jm-home').onclick=()=>{$('jmodal').hidden=true;if(Staff.movieDone&&Math.random()<.5){view('m');Movie.later()}else Day.next(true)}; /* 帰社=基本的に翌日へ。スタッフに誘われたときだけ、映画のあとに翌日へ */
+JobManager.build();$('jpunch').onclick=()=>JobManager.punch();$('jquit').onclick=()=>JobManager.quit();$('jm-in').onclick=()=>{$('jmodal').hidden=true;JobManager.idle()};$('jm-home').onclick=()=>{$('jmodal').hidden=true;if(Staff.movieDone&&!Staff.gone&&Math.random()<.5){view('m');Movie.later()}else Day.next(true)}; /* 帰社=基本的に翌日へ。スタッフに誘われたときだけ、映画のあとに翌日へ */
 $('jhome').onclick=()=>Day.next(true);setInterval(()=>{if(JobManager.st==='idle')$('jclock').textContent=JobManager.clock()},1000);$('jsend').onclick=()=>JobManager.next();
 // 画面切り替えは自動ドアの演出を挟む(閉まりきったところで画面を入れ替える)
 const DoorFX={busy:false,run(label,fn){const d=$('door');
@@ -685,7 +685,8 @@ const DoorFX={busy:false,run(label,fn){const d=$('door');
   setTimeout(()=>{fn();setTimeout(()=>{d.classList.remove('closed');Snd.beep(520,.12,'sine',.05);setTimeout(()=>{d.style.visibility='hidden';this.busy=false},620)},400)},680)}};
 const VIEWS={s:['slotv','スロット店'],m:['mapv','外'],o:['moonv','月'],b:['battlev','戦闘'],k:['minev','鉱山'],j:['jobv','会社'],y:['yamiv','やみきん']};
 function view(v,cb,opts){const G=GameManager,nodoor=opts&&opts.nodoor;if(DoorFX.busy&&!nodoor)return;const cur=Object.keys(VIEWS).find(k=>!$(VIEWS[k][0]).hidden);if(v===cur)return;
- if(Sky.navLock&&cur==='m'&&v!=='m')return; /* マップで会話イベントが起きる前後は、エリア選択で移動できない */
+ if(Sky.navLock&&cur==='m'&&v!=='m')return;
+ if(Phone.active)return; /* 電話の着信・通話中は画面を移動できない */ /* マップで会話イベントが起きる前後は、エリア選択で移動できない */
  if(G.phase!=='idle'||EventManager.open){G.say('リール停止後・会話終了後に切り替えてください');return}
  const swap=()=>{const m=document.querySelector('.m');m.classList.toggle('job',v==='j');m.classList.toggle('yami',v==='y');m.classList.toggle('mine',v==='k');
   Object.keys(VIEWS).forEach(k=>$(VIEWS[k][0]).hidden=k!==v);
@@ -704,10 +705,11 @@ const Staff={bank:0,prizes:{},last:-1,nc:0,cool:0,sulk:false,love:0,seenSet:new 
  P:[['缶ジュース',30],['お菓子の詰め合わせ',80],['ぬいぐるみ',200],['家電ギフト券',500],['金のトロフィー',1500]],
  T:['ふあぁ…夜になるとお仕事してても眠くなっちゃいます。','このお仕事とてもお休みが少なくて大変です…。','今日は朝から新台入替の準備で大忙しなんですよ。','最近、隣の台のベテランさん、よく唸っていらっしゃいますよね。','ここだけの話、設定6って本当にあるんでしょうか…ね？','おしごとの方もされてます？ 上司の飲みの誘いには要注意ですよ。','メダルは使い切る前に、預けておくのも手ですよ。','全ベットは…その、ほどほどに…。','外は冷えますね。温かいお茶でもお出ししましょうか。…なんて。','リールを見つめすぎて、目が疲れたらお声がけくださいね。'],
  say(t,b){EventManager.show('staff',t,b)},
- call(){if(this.cool>0){Ach.do('nobody');Snd.beep(200,.15);EventManager.show('narr','しかし　だれもこなかった。',[['外に出る。',()=>{Ach.do('outside');view('m')}],['やめる',()=>{}]]);return} /* スタッフを怒らせて呼べない間も、外に出ることだけはできる */this.menu()},
+ call(){if(this.cool>0&&!this.gone){Ach.do('nobody');Snd.beep(200,.15);EventManager.show('narr','しかし　だれもこなかった。',[['外に出る。',()=>{Ach.do('outside');view('m')}],['やめる',()=>{}]]);return} /* スタッフを怒らせて呼べない間も、外に出ることだけはできる */this.menu()},
  tick(){if(this.cool>0)this.cool--},
  // 「なんでもない」連打: 7回目から反応が変化し、11回目で不機嫌になり約30ゲーム来なくなる
- none(){const n=++this.nc,T={3:'…？そうですか。',4:'…？',5:'……？？？',6:'…。',7:'…からかってます？'};
+ none(){if(this.gone){this.say(['あ、そっすか。じゃ。','ん？ 用ないんすか？','えーと…何かあったら言って下さいねー。'][Math.floor(Math.random()*3)],[['OK',()=>{}]]);return}
+  const n=++this.nc,T={3:'…？そうですか。',4:'…？',5:'……？？？',6:'…。',7:'…からかってます？'};
   if(n>=7){Ach.do('tease');this.cool=30;this.sulk=true;this.nc=0;const j=this.prizes['缶ジュース']>0; // 缶ジュースを持っていれば渡して機嫌を直せる
    this.say(T[7],j?[['缶ジュースを渡す',()=>this.gift(true)],['渡さない',()=>{}]]:[['OK',()=>{}]]);return}
   this.say(T[n]||'そうですか。ごゆっくりどうぞ。',[['OK',()=>{}]])},
@@ -733,7 +735,7 @@ const Staff={bank:0,prizes:{},last:-1,nc:0,cool:0,sulk:false,love:0,seenSet:new 
  promo(){const G=GameManager;DoorFX.run('ビルの路地裏',()=>Alley.show());
   setTimeout(()=>this.talk(['あの…実は、お客さんに、一番最初にお伝えしたくて。','私、これまでの業績を認められて、昇進が決まったんです！','それも、お客さんのお陰で、頑張れたんですよ。','本当に…本当に、ありがとうございます！'],0,()=>{
    Alley.dimT=1;this.talk(['…でも、その…。','昇進先が、この店じゃなくて…。','他の店舗の、店長として就任することになってしまいました…。'],0,()=>
-    this.talk(['だから…良くしてくれたお客さんには、ちゃんと挨拶したくて。','今まで、本当に、お世話になりました。','…。','…冷えますね！早く戻りましょうか…！'],0,()=>{this.promoDone=true;Ach.do('promo');DoorFX.run('お店',()=>Alley.hide());G.say('スタッフから、他店舗の店長に昇進すると聞いた…')}))}),2100)},
+    this.talk(['だから…良くしてくれたお客さんには、ちゃんと挨拶したくて。','今まで、本当に、お世話になりました。','…。','…冷えますね！早く戻りましょうか…！'],0,()=>{this.promoDone=true;this.promoDay=Day.n;Ach.do('promo');DoorFX.run('お店',()=>Alley.hide());G.say('スタッフから、他店舗の店長に昇進すると聞いた…')}))}),2100)},
  // 映画のペアチケットを渡す→スタッフと映画に行く
  ticketDate(){const E=EventManager,G=GameManager;
   E.intro('staff','えっ、映画のペアチケット！？',()=>E.intro('staff','これ…もしかして、私を誘ってくれてるんですか…？',()=>E.show('staff','…ご一緒しても、いいんですか？',[
@@ -769,41 +771,45 @@ const Staff={bank:0,prizes:{},last:-1,nc:0,cool:0,sulk:false,love:0,seenSet:new 
   if(first)E.intro('staff','えっ…！？ これって、お菓子の詰め合わせ…！',()=>E.intro('staff','い、いえ、ダメですダメです！ お客さんからこんな…！',ask));else ask()},
  // 複数の吹き出しを順に表示(約1.9秒で自動送り、▶で即送り)
  talk(L,i=0,done){const last=i===L.length-1;this.say(L[i],[[last?'OK':'▶',()=>{if(!last)this.talk(L,i+1,done);else if(done)done()}]]);},
- menu(){if(!this.baseSet)this.baseSet=new Set(this.pool());Ach.do('staff1');if(this.sulk)Ach.do('sigh');const g=this.sulk?'……はぁ、お呼びでしょうか。':'お呼びでしょうか？';this.sulk=false;const b=[['メダル預け入れ',()=>this.bankMenu()],['景品交換',()=>this.prizeMenu()],['世間話',()=>this.chat()]];
-  if(this.love>=1)b.push(['渡す',()=>this.give()]); // 一度渡した後は通常の呼び出しから渡せる
-  b.push(['外に出る。',()=>{this.nc=0;Ach.do('outside');if(this.snackGiven){this.smirk=true;this.sj=false}this.say(this.snackGiven?'また来てくださいね！':'いってらっしゃいませ。',[['OK',()=>view('m')]])}]);b.push(['なんでもない',()=>this.none()]);this.say(g,b);
-  if(this.hasNew()){const bt=[...$('evb').children].find(x=>x.textContent==='世間話');if(bt){const n=document.createElement('span');n.className='nw';n.textContent='New!';bt.appendChild(n)}}},
+ menu(){CAST.staff.n=this.gone?'男性スタッフ':'スタッフ';
+  if(this.gone&&!this.greeted){this.greeted=true;Ach.do('staffgone');this.talk(['あっ、どもー。','はじめましてェ、今日からこの店に配属になりましたァ。','何かありゃ声かけて下さいー。'],0,()=>this.menu());return}
+  if(!this.baseSet)this.baseSet=new Set(this.pool());Ach.do('staff1');if(this.sulk)Ach.do('sigh');const g=this.gone?'ん、呼びましたー？':(this.sulk?'……はぁ、お呼びでしょうか。':'お呼びでしょうか？');this.sulk=false;const b=[['メダル預け入れ',()=>this.bankMenu()],['景品交換',()=>this.prizeMenu()],['世間話',()=>this.chat()]];
+  if(this.love>=1&&!this.gone)b.push(['渡す',()=>this.give()]); // 一度渡した後は通常の呼び出しから渡せる
+  b.push(['外に出る。',()=>{this.nc=0;Ach.do('outside');if(this.snackGiven&&!this.gone){this.smirk=true;this.sj=false}this.say(this.gone?'いってらっしゃっせー。':(this.snackGiven?'また来てくださいね！':'いってらっしゃいませ。'),[['OK',()=>view('m')]])}]);b.push(['なんでもない',()=>this.none()]);this.say(g,b);
+  if(!this.gone&&this.hasNew()){const bt=[...$('evb').children].find(x=>x.textContent==='世間話');if(bt){const n=document.createElement('span');n.className='nw';n.textContent='New!';bt.appendChild(n)}}},
  amt:10,
  // 上下ボタンで預ける/引き出す枚数を決めるUI
- bankMenu(){const G=GameManager;this.nc=0;this.say(`メダルのお預かりですね。手持ち${G.credits}枚、お預かり中${this.bank}枚。預けた分は全ベットでも使われません。`,
+ bankMenu(){const G=GameManager;this.nc=0;this.say(this.gone?`はいはい、預け入れっすねー。手持ち${G.credits}枚、預かり中${this.bank}枚っす。預けた分は全ベットでも使われないんで。`:`メダルのお預かりですね。手持ち${G.credits}枚、お預かり中${this.bank}枚。預けた分は全ベットでも使われません。`,
    [['預ける',()=>this.dep(this.amt)],['引き出す',()=>this.dep(-this.amt)],['戻る',()=>this.menu()]]);
   const row=document.createElement('div');row.className='stp';row.id='stp';const v=document.createElement('b');v.textContent=this.amt+'枚';
   const mk=(l,d)=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{this.amt=Math.max(0,Math.min(9999,this.amt+d));v.textContent=this.amt+'枚';Snd.beep(d>0?700:500,.04,'square',.03)};return b};
   row.append(mk('▼100',-100),mk('▼10',-10),v,mk('▲10',10),mk('▲100',100));row.style.visibility='hidden';$('ev').insertBefore(row,$('evb'))},
- dep(n){const G=GameManager;if(!n){this.say('枚数が0枚のようです…。ボタンで枚数を決めてくださいね。',[['戻る',()=>this.bankMenu()],['OK',()=>{}]]);return}if(n>0&&G.credits<n||n<0&&this.bank<-n){this.say(n>0?`手持ちが${n}枚に足りないようです…。`:`お預かりが${-n}枚に足りないようです…。`,[['戻る',()=>this.bankMenu()],['OK',()=>{}]]);return}
+ dep(n){const G=GameManager;if(!n){this.say(this.gone?'0枚っすよー。ボタンで枚数決めてくださいー。':'枚数が0枚のようです…。ボタンで枚数を決めてくださいね。',[['戻る',()=>this.bankMenu()],['OK',()=>{}]]);return}if(n>0&&G.credits<n||n<0&&this.bank<-n){this.say(n>0?(this.gone?`手持ちが${n}枚に足りないっすよ。`:`手持ちが${n}枚に足りないようです…。`):(this.gone?`預かりが${-n}枚に足りないっす。`:`お預かりが${-n}枚に足りないようです…。`),[['戻る',()=>this.bankMenu()],['OK',()=>{}]]);return}
   G.credits-=n;this.bank+=n;G.hud();if(n>0)Ach.do('bank1');
-  this.say(n>0?`${n}枚、お預かりしました。お預かりは${this.bank}枚です。`:`${-n}枚、お返ししました。手持ちは${G.credits}枚です。`,[['続ける',()=>this.bankMenu()],['OK',()=>{}]])},
- prizeMenu(t){this.nc=0;this.say(t||`景品交換ですね。手持ちは${GameManager.credits}枚です。`,[...this.P.map(([n,c])=>[`${n}(${c}枚)`,()=>this.buyMenu(n,c)]),['戻る',()=>this.menu()]])},
+  this.say(n>0?(this.gone?`${n}枚、預かりましたー。預かり${this.bank}枚っす。`:`${n}枚、お預かりしました。お預かりは${this.bank}枚です。`):(this.gone?`${-n}枚、お返ししまーす。手持ち${G.credits}枚っす。`:`${-n}枚、お返ししました。手持ちは${G.credits}枚です。`),[['続ける',()=>this.bankMenu()],['OK',()=>{}]])},
+ prizeMenu(t){this.nc=0;this.say(t||(this.gone?`景品っすねー。手持ち${GameManager.credits}枚っす。`:`景品交換ですね。手持ちは${GameManager.credits}枚です。`),[...this.P.map(([n,c])=>[`${n}(${c}枚)`,()=>this.buyMenu(n,c)]),['戻る',()=>this.menu()]])},
  // 景品: ▼▲で買う個数を指定(手持ちで買える範囲)
  buyMenu(n,c){this.nc=0;const G=GameManager,max=Math.max(1,Math.min(99,Math.floor(G.credits/c)));this.qty=Math.min(this.qty||1,max)||1;
-  this.say(`${n}は1個${c}枚です。いくつ買いますか？（手持ち${G.credits}枚）`,[['買う',()=>this.buy(n,c,this.qty)],['戻る',()=>this.prizeMenu()]]);
+  this.say(this.gone?`${n}は1個${c}枚っす。何個にしますー？（手持ち${G.credits}枚）`:`${n}は1個${c}枚です。いくつ買いますか？（手持ち${G.credits}枚）`,[['買う',()=>this.buy(n,c,this.qty)],['戻る',()=>this.prizeMenu()]]);
   const row=document.createElement('div');row.className='stp';row.id='stp';const v=document.createElement('b'),upd=()=>{v.textContent=`${this.qty}個＝${this.qty*c}枚`};upd();
   const mk=(l,d)=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{this.qty=Math.max(1,Math.min(max,this.qty+d));upd();Snd.beep(d>0?700:500,.04,'square',.03)};return b};
   row.append(mk('▼1',-1),v,mk('▲1',1));row.style.visibility='hidden';$('ev').insertBefore(row,$('evb'))},
- buy(n,c,q=1){const G=GameManager;if(G.credits<c*q){this.prizeMenu('メダルが足りないようです…。');return}
+ buy(n,c,q=1){const G=GameManager;if(G.credits<c*q){this.prizeMenu(this.gone?'メダル足りないっすよー。':'メダルが足りないようです…。');return}
   G.credits-=c*q;this.prizes[n]=(this.prizes[n]||0)+q;this.qty=1;G.hud();Got.show(q>1?`${n}×${q}`:n);Ach.do('prize1');this.got=this.got||{};this.got[n]=1;if(Object.keys(this.got).length>=this.P.length)Ach.do('prizeall');Snd.seq([784,988]);
-  this.say(`${n}${q>1?`を${q}個`:''}ですね。ありがとうございました！`,[['続ける',()=>this.prizeMenu()],['OK',()=>{}]])},
+  this.say(this.gone?`${n}${q>1?`を${q}個`:''}っすね。まいどー。`:`${n}${q>1?`を${q}個`:''}ですね。ありがとうございました！`,[['続ける',()=>this.prizeMenu()],['OK',()=>{}]])},
  // 世間話のレパートリー(好感度・昇進の話で変わる)。最初に見た時点のものは「既知」とし、あとから増えた未読があれば「New!」を出す
- pool(){let p=[...this.T,...(this.love>=1?this.L1:[]),...(this.love>=2?this.L2:[]),...(this.love>=3?this.L3:[]),...(this.love>=5?this.L4:[]),...(this.love>=7?this.L5:[])];
+ T2:['前の店では、新台入替の担当をしていました。','景品の在庫は、ちゃんと把握していますので、ご安心ください。','最近、夜の冷え込みが厳しいですね。お体に気をつけてください。','前任の方は、とても慕われていたと聞いています。…僕も見習わないと。','メダルの預け入れは、計画的にどうぞ。…って、説教くさいですかね。','お店の鍵の場所、まだ覚えきれてなくて…。内緒にしてください。'],
+ pool(){if(this.gone)return this.T2;let p=[...this.T,...(this.love>=1?this.L1:[]),...(this.love>=2?this.L2:[]),...(this.love>=3?this.L3:[]),...(this.love>=5?this.L4:[]),...(this.love>=7?this.L5:[])];
   if(this.promoDone){const ex=['私、実はこのお店に入ってまだ3か月なんです。','あなたが来てくれると、ちょっと嬉しいんです。…あ、お客さんとして、ですよ？','最近、お客さんが来るのを、ちょっとだけ待ってる自分がいて…。…気のせいです！','ありがとうございます。お客さんが来てくれると、毎日が少しだけ楽しいです。'];
    p=p.filter(t=>!ex.includes(t));p.push('…。','…そんな顔しないでください！ほら、笑顔ですよ。')}
   return p},
  hasNew(){if(!this.baseSet)return false;return this.pool().some(t=>!this.baseSet.has(t)&&!this.seenSet.has(t))},
  angry(){const E=EventManager,G=GameManager;Ach.do('listen');Snd.seq([220,196,165]);Moon.shake(7);setTimeout(()=>Moon.shake(0),300);
   E.show('staff','ちゃんと聞いてください！！',[['はい…',()=>{G.say('スタッフに、ちゃんと聞くよう怒られた…')}]],{big:true,noskip:true,speed:90})}, // 「もう少し話す」を連打すると、スキップ不能の大きなテキストボックスで怒られる
- chat(chained){const now=performance.now();if(chained&&this.lt&&now-this.lt<1000)this.cq=(this.cq||0)+1;else this.cq=0;this.lt=now;if(this.cq>=5){this.cq=0;this.angry();return}
+ chat(chained){if(this.gone){this.say('えー、オレちょっと忙しいんで後でいいすかァ。',[['OK',()=>{}]]);return} /* 男性スタッフは世間話を断る */
+  const now=performance.now();if(chained&&this.lt&&now-this.lt<1000)this.cq=(this.cq||0)+1;else this.cq=0;this.lt=now;if(this.cq>=5){this.cq=0;this.angry();return}
   if(!chained&&(Ach.c.movies||0)>=5&&!this.promoDone){this.promoAsk();return}
-  if(!chained&&this.promoDone&&!this.farewell){this.farewell=true;this.talk(['寂しくなっちゃいますね。','でも、その日までいつも通りに','その方が、楽しくお別れできるので！'],0,()=>{});return} /* 昋進の話の直後の世間話で、一度だけ */ // 映画に5回以上行ったあとの世間話で、スタッフから声をかけられる
+  if(!chained&&this.promoDone&&!this.farewell&&!this.gone){this.farewell=true;this.talk(['寂しくなっちゃいますね。','でも、その日までいつも通りに','その方が、楽しくお別れできるので！'],0,()=>{});return} /* 昋進の話の直後の世間話で、一度だけ */ // 映画に5回以上行ったあとの世間話で、スタッフから声をかけられる
   this.nc=0;Ach.add('chat');const p=this.pool();
   let i;do i=Math.floor(Math.random()*p.length);while(i===this.last&&p.length>1);this.last=i;this.seenSet.add(p[i]);this.say(p[i],[['もう少し話す',()=>this.chat(true)],['OK',()=>{}]])}};
 $('staff').onclick=()=>{const G=GameManager;if(G.phase!=='idle'||EventManager.open)return G.say('リール停止後・会話終了後に呼んでください');Staff.call()};
@@ -811,10 +817,10 @@ $('staff').onclick=()=>{const G=GameManager;if(G.phase!=='idle'||EventManager.op
 // ===== 強制出勤の電話(1回転ごとに5%) =====
 const Phone={ign:0,visit:false,vsp:0,PAY:1000,active:false,phase:'',forced:false,ts:[],at:null,rt:null,ty:null,
  L:['「おい、今すぐ出勤しろ！ 急ぎの仕事だ！」','「休みのところ悪いな。すぐ来い！」','「いつまで遊んでるんだ。出勤だ、出勤！」'],
- after(){if(Happy.omen)Happy.omenN++;if(this.active||EventManager.open||BonusManager.cur)return;
+ after(){if(Happy.omen)Happy.omenN++;if(this.active||EventManager.open||BonusManager.cur||$('bk').classList.contains('show'))return; /* 破産演出中は電話・上司の来店を始めない */
   if(this.visit){if(this.vsp>0)this.vsp--;if(this.vsp<=0)this.arrive();return} if(Happy.omen&&Happy.omenN>=Happy.omenAt){Happy.omen=false;this.ring('happy');return} /* 「お告げ」を聞いた後、スロットをしばらく遊んでいると「幸せ」から電話 */ // 3回以上無視した後、約20回転で上司が来る
   if($('phf').checked||Math.random()<.05)this.ring()},
- ring(kind){const G=GameManager;if(this.active||G.phase!=='idle'||EventManager.open)return;this.kind=kind||'boss';
+ ring(kind){const G=GameManager;if(this.active||G.phase!=='idle'||EventManager.open||$('bk').classList.contains('show'))return;this.kind=kind||'boss';
   this.active=true;this.phase='ring';this.ts=[];$('statp').hidden=true;$('dbg').style.display='none';
   const p=$('phone'),hp=this.kind==='happy';p.classList.toggle('hp',hp);p.querySelector('.nm').textContent=hp?'幸せ':'上司';p.querySelector('.av').textContent=hp?'幸':'上';p.style.visibility='visible';$('pst').textContent='着信中…';$('pbt').hidden=false;$('ptxt').textContent='';
   p.classList.remove('up','ring');void p.offsetWidth;p.classList.add('up','ring');
@@ -827,7 +833,7 @@ const Phone={ign:0,visit:false,vsp:0,PAY:1000,active:false,phase:'',forced:false
  dodge(){this.stop();this.phase='dodged';Ach.do('dodge1');Ach.add('dodge');const p=$('phone');p.classList.remove('ring','up');Snd.beep(200,.25,'sawtooth');
   setTimeout(()=>{p.style.visibility='hidden';this.active=false;GameManager.say('着信が切れた…');
    this.ign++;if(this.ign>=3&&!this.visit){this.visit=true;this.vsp=18+Math.floor(Math.random()*5)}},750)}, // 電話を無視すると、上司が店まで呼びに来る
- arrive(){const G=GameManager,E=EventManager;if(G.phase!=='idle'||E.open||this.active)return;this.visit=false;this.ign=0;Ach.do('boss1');
+ arrive(){const G=GameManager,E=EventManager;if(G.phase!=='idle'||E.open||this.active||$('bk').classList.contains('show'))return;this.visit=false;this.ign=0;Ach.do('boss1');
   Snd.seq([880,660,880]);Snd.beep(120,.25,'square',.08);Moon.shake(6);setTimeout(()=>Moon.shake(0),250);G.say('店の入口で、誰かが大声を出している…');
   const go=()=>{this.forced=true;view('j')};
   E.intro('boss','「おい！ 電話に出ないと思ったら、こんなところにいたのか！」',()=>E.show('boss','「サボってないで、さっさと出社しろ！ ほら、行くぞ！」',[['出社する',go],[`${this.PAY}枚払って帰らせる`,()=>this.pay()]]))},
@@ -1401,6 +1407,7 @@ const AL=[ // [id, グループ, タイトル, 説明, カウンター名, 目�
  ['movie1','スタッフ','初めての映画','スタッフと映画に行った'],
  ['movie2','スタッフ','仕事終わりの映画','仕事終わりにスタッフに誘われて、映画に行った'],
  ['movies5','スタッフ','映画仲間','スタッフと累計5回映画に行った','movies',5],
+ ['staffgone','隠し','入れ替わり','昇進の話から5日後、別の男性スタッフがやってきた',0,0,1],
  ['promo','隠し','昇進の知らせ','スタッフから、他店舗の店長に昇進すると聞いた',0,0,1],
  ['snackhint','隠し','媚びてはいけません','好感度が高いスタッフに、またジュースを渡して、お菓子をねだられた',0,0,1],
  ['snack1','スタッフ','お菓子の贈り物','スタッフにお菓子の詰め合わせを渡した'],
@@ -1525,7 +1532,7 @@ const Save={KEY:'luckyjug-save-v1',t:0,ok:true,off:false,
   g:{cr:GameManager.credits,free:GameManager.free},set:SettingManager.cur,
   st:{games:StatisticsManager.games,big:StatisticsManager.big,reg:StatisticsManager.reg,grape:StatisticsManager.grape,cherry:StatisticsManager.cherry,replay:StatisticsManager.replay},
   bn:BonusManager.cur,
-  sf:{bank:Staff.bank,prizes:Staff.prizes,love:Staff.love,got:Staff.got||{},cool:Staff.cool,sulk:Staff.sulk,hinted:Staff.hinted,snackOn:Staff.snackOn,snackN:Staff.snackN,snackGiven:Staff.snackGiven,ticket:Staff.ticket,movieDone:Staff.movieDone,promoDone:Staff.promoDone,farewell:Staff.farewell,base:Staff.baseSet?[...Staff.baseSet]:null,seen:[...Staff.seenSet]},
+  sf:{bank:Staff.bank,prizes:Staff.prizes,love:Staff.love,got:Staff.got||{},cool:Staff.cool,sulk:Staff.sulk,hinted:Staff.hinted,snackOn:Staff.snackOn,snackN:Staff.snackN,snackGiven:Staff.snackGiven,ticket:Staff.ticket,movieDone:Staff.movieDone,promoDone:Staff.promoDone,farewell:Staff.farewell,base:Staff.baseSet?[...Staff.baseSet]:null,seen:[...Staff.seenSet],promoDay:Staff.promoDay,gone:Staff.gone,greeted:Staff.greeted},
   ev:{loan:EventManager.loan},
   y:{debt:Yami.debt,pr:Yami.pr,spins:Yami.spins,cs:Yami.cs,waits:Yami.waits,amt:Yami.amt,lim:Yami.lim},
   ph:{forced:Phone.forced,ign:Phone.ign,visit:Phone.visit,vsp:Phone.vsp},
@@ -1542,7 +1549,7 @@ const Save={KEY:'luckyjug-save-v1',t:0,ok:true,off:false,
   if(d.set)SettingManager.cur=d.set;
   if(d.st)Object.assign(StatisticsManager,d.st);
   if(d.bn){BonusManager.cur=d.bn;$('lamp').classList.add('on')}
-  if(d.sf){Staff.bank=d.sf.bank|0;Staff.prizes=d.sf.prizes||{};Staff.love=d.sf.love|0;Staff.got=d.sf.got||{};Staff.cool=d.sf.cool|0;Staff.sulk=!!d.sf.sulk;Staff.hinted=!!d.sf.hinted;Staff.snackOn=!!d.sf.snackOn;Staff.snackN=d.sf.snackN|0;Staff.snackGiven=!!d.sf.snackGiven;Staff.ticket=!!d.sf.ticket;Staff.movieDone=!!d.sf.movieDone;Staff.promoDone=!!d.sf.promoDone;Staff.farewell=!!d.sf.farewell;if(d.sf.base)Staff.baseSet=new Set(d.sf.base);if(d.sf.seen)Staff.seenSet=new Set(d.sf.seen)}
+  if(d.sf){Staff.bank=d.sf.bank|0;Staff.prizes=d.sf.prizes||{};Staff.love=d.sf.love|0;Staff.got=d.sf.got||{};Staff.cool=d.sf.cool|0;Staff.sulk=!!d.sf.sulk;Staff.hinted=!!d.sf.hinted;Staff.snackOn=!!d.sf.snackOn;Staff.snackN=d.sf.snackN|0;Staff.snackGiven=!!d.sf.snackGiven;Staff.ticket=!!d.sf.ticket;Staff.movieDone=!!d.sf.movieDone;Staff.promoDone=!!d.sf.promoDone;Staff.farewell=!!d.sf.farewell;Staff.promoDay=d.sf.promoDay|0;Staff.gone=!!d.sf.gone;Staff.greeted=!!d.sf.greeted;if(d.sf.base)Staff.baseSet=new Set(d.sf.base);if(d.sf.seen)Staff.seenSet=new Set(d.sf.seen)}
   if(d.ev)EventManager.loan=d.ev.loan||null;
   if(d.y)Object.assign(Yami,d.y);
   if(d.ph){Phone.forced=!!d.ph.forced;Phone.ign=d.ph.ign|0;Phone.visit=!!d.ph.visit;Phone.vsp=d.ph.vsp|0}
@@ -1636,10 +1643,11 @@ const DayFX={on:false,run:false,t:0,raf:0,last:0,B:[[0,9,18],[10,8,26],[19,11,14
   c.fillStyle=on?'#ffe28c':'#4a4a55';c.fillRect(lx-1,14,3,2);
   c.fillStyle='#d8d8e8';c.fillRect(lx+4,14,1,Math.round(10+pull));c.fillRect(lx+3,Math.round(24+pull),3,3)}};
 const Day={n:1,
- next(toMap){this.n++;Ach.add('days');const el=$('daycard');
+ next(toMap){this.n++;Ach.add('days');if(Staff.promoDone&&!Staff.gone&&this.n-(Staff.promoDay||this.n)>=5){Staff.gone=true;Staff.greeted=false;Staff.cool=0;Staff.sulk=false} /* 昇進の話から5日後、スタッフが入れ替わる */
+  const el=$('daycard');
   // 自動ドアが閉じる→(裏でマップへ切り替え)→ドアが開く→月が沈み、日めくりがめくれて曜日が変わり、朝日が昇る→フェードでマップへ
   DoorFX.run('次の日',()=>{DayFX.reset((this.n-1)%7,this.n%7);el.style.transition='none';el.hidden=false;el.classList.add('on');if(toMap)view('m',null,{nodoor:true});DayFX.start(450)});
-  setTimeout(()=>{el.style.transition='opacity .9s';el.classList.remove('on');setTimeout(()=>{el.hidden=true;el.style.transition='';DayFX.stop();Sky.navLock=false},1000)},7000)}};
+  setTimeout(()=>{el.style.transition='opacity .9s';el.classList.remove('on');setTimeout(()=>{el.hidden=true;el.style.transition='';DayFX.stop();if(!toMap)Sky.navLock=false},1000)},7000)}};
 
 // ===== ビルの路地裏(スタッフから昇進の報告を受ける場面) =====
 const Alley={on:false,t:0,raf:0,last:0,dim:0,dimT:0,drops:[],rip:[],spl:[],sp:0,
