@@ -312,6 +312,13 @@ h1,.tabs{display:none}
 #title.go .tspd{display:block;animation:tsl .22s linear infinite}
 #tspeed{position:absolute;inset:0;pointer-events:none;opacity:0}
 #tcurtain{position:absolute;left:0;top:0;width:360px;height:1008px;z-index:81;display:none;pointer-events:none;will-change:transform;image-rendering:pixelated}
+#tdlg{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.45)}
+#tdbox{position:absolute;left:22px;right:22px;top:50%;transform:translateY(-50%);background:#fbf4e0;color:#2b1d12;border:3px solid #3b2a1a;box-shadow:4px 4px 0 rgba(0,0,0,.6);padding:16px 14px 14px;text-align:center}
+#tdt{font-size:16px;line-height:1.6;min-height:52px}
+#tdb{display:flex;gap:10px;margin-top:12px}
+#tdb button{flex:1;font:inherit;font-size:15px;padding:9px 4px;background:#efe5c8;color:#2b1d12;border:3px solid #3b2a1a;box-shadow:3px 3px 0 #3b2a1a;cursor:pointer}
+#tdb button.on{background:#ffd75e}
+#tdb.col{flex-direction:column}#tdb button small{display:block;font-size:11px;opacity:.75;margin-top:3px}#tdb button.dis{opacity:.4;cursor:default}#tdt:empty{display:none;min-height:0}
 @keyframes tfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @keyframes tglow{0%{filter:drop-shadow(3px 3px 0 #ff3d8b)}100%{filter:drop-shadow(3px 3px 0 #29c7ff)}}
 @keyframes tshine{0%{background-position:130% 0}100%{background-position:-30% 0}}
@@ -363,6 +370,10 @@ input,select,textarea,button{font-family:inherit}
 input,select,textarea{font-size:16px}
 #savep{position:absolute;left:12px;right:12px;top:110px;z-index:34;background:rgba(0,0,0,.94);border:2px solid var(--gold);padding:10px;font-size:13px;display:flex;flex-direction:column;gap:8px}
 #savep[hidden]{display:none}#savep b{color:var(--gold)}#savep button{padding:8px}
+#svl{display:flex;flex-direction:column;gap:6px}
+.svr{display:flex;align-items:center;gap:6px;border:1px solid #5a4a20;padding:6px}
+.svi{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.svi b{font-size:13px}.svi span{font-size:11px;opacity:.85;word-break:break-all}
+.svb{display:flex;flex-direction:column;gap:4px}.svb button{padding:5px 8px;font-size:12px;min-width:64px}.svb button:disabled{opacity:.35}
 @media (prefers-reduced-motion:reduce){#achn{transition:none}}
 #jambubs{position:absolute;inset:0;pointer-events:none;z-index:1}
 .jb{position:absolute;left:0;top:78%;transform:translateY(-100%);white-space:nowrap;background:#fbf6e6;color:#3a2a20;border:3px solid #3a2a20;padding:5px 9px;font-family:"DotGothic16","DotGothic",monospace;font-size:14px;line-height:1.25;text-align:center;box-shadow:3px 3px 0 #3a2a20}
@@ -377,11 +388,11 @@ input,select,textarea{font-size:16px}
 <div id="enc"></div>
 <canvas id="noise" width="90" height="160"></canvas><canvas id="crack" width="360" height="640"></canvas>
 <div id="got" hidden></div>
-<div id="title"><div id="tscroll"><canvas id="tcv"></canvas><div id="tlogo"></div><div id="tspark"></div></div><div id="tspeed"></div><div id="tflash"></div><div id="tprompt">PRESS ANY KEY OR TAP</div></div>
+<div id="title"><div id="tscroll"><canvas id="tcv"></canvas><div id="tlogo"></div><div id="tspark"></div></div><div id="tspeed"></div><div id="tflash"></div><div id="tprompt">PRESS ANY KEY OR TAP</div><div id="tdlg" hidden><div id="tdbox"><div id="tdt"></div><div id="tdb"></div></div></div></div>
 <canvas id="tcurtain"></canvas>
 <button id="jskip" hidden>スキップ</button>
 <div id="achn"><svg viewBox="0 0 10 10" width="22" height="22" shape-rendering="crispEdges" style="flex:none"><rect x="2" y="1" width="6" height="3" fill="#ffd75e"/><rect x="1" y="1" width="1" height="2" fill="#ffd75e"/><rect x="8" y="1" width="1" height="2" fill="#ffd75e"/><rect x="4" y="4" width="2" height="2" fill="#ffd75e"/><rect x="3" y="6" width="4" height="1" fill="#ffd75e"/><rect x="2" y="7" width="6" height="2" fill="#ffd75e"/></svg><div><small>実績解除！</small><b id="achn-t"></b></div></div>
-<div id="savep" hidden><b>データ</b><div id="save-info"></div><button id="sv-now">今すぐセーブ</button><button id="sv-del">データを削除</button><button id="sv-x">閉じる</button></div>
+<div id="savep" hidden><b>データ</b><div id="save-info"></div><div id="svl"></div><button id="sv-del">全データを削除</button><button id="sv-x">閉じる</button></div>
 <div id="achp" hidden><div class="ah"><b>実績</b><span id="ach-cnt"></span><button id="ach-x">閉じる</button></div><div id="ach-list"></div></div>
 <div id="alley" hidden><canvas id="cva" width="82" height="107"></canvas><div id="atitle">ビルの路地裏</div></div>
 <div id="daycard" hidden><canvas id="cvd" width="82" height="107"></canvas><div id="dctext"></div><div id="dcal"><div class="pg new"></div><div class="pg old"></div></div></div>
@@ -562,9 +573,21 @@ const Title={on:true,phase:'intro',W:82,H:246,N:16,PX:139.5,clk:0,last:0,raf:0,r
  // リールは毎フレーム、夜景は約30fpsで描く
  loop(now){if(!this.on)return;this.raf=requestAnimationFrame(t=>this.loop(t));const dt=this.lf?Math.min(.05,(now-this.lf)/1000):.016;this.lf=now;this.clk+=dt;
   this.reelStep(dt);if(this.phase==='go')this.scroll();if(now-this.last>=33&&!this.hid){this.last=now;this.draw(this.clk)}},
- press(){if(!this.on)return;this.gest=true;try{if(Snd.ctx&&Snd.ctx.state==='suspended')Snd.ctx.resume()}catch(e){}
+ // タップしたら「はじめから / つづきから / こんふぃぐ」を出す
+ ask(){const d=$('tdlg'),t=$('tdt'),b=$('tdb');this.dlg=1;d.hidden=false;d.onpointerdown=e=>e.stopPropagation();$('tprompt').classList.remove('on');$('tprompt').style.opacity=0;
+  const show=(txt,btns,col)=>{t.textContent=txt;b.className=col?'col':'';b.innerHTML='';btns.forEach(x=>{const e=document.createElement('button');const l=document.createElement('span');l.textContent=x.l;e.append(l);if(x.sub){const q=document.createElement('small');q.textContent=x.sub;e.append(q)}if(x.dis)e.classList.add('dis');e.onclick=ev=>{ev.stopPropagation();if(!x.dis)x.f()};b.appendChild(e)});this.bs=[...b.children];this.sel=Math.max(0,btns.findIndex(x=>!x.dis));this.hl()};
+  const begin=()=>{d.hidden=true;this.dlg=0;this.go()};
+  const has=[0,1,2,3].map(i=>Save.meta(Save.read(i)));
+  const main=()=>show('',[{l:'はじめから',f:newg},{l:'つづきから',f:cont,dis:!has.some(Boolean)},{l:'こんふぃぐ',f:conf}],1);
+  const newg=()=>{if(has[0])show('オートセーブのデータは、あたらしいデータで上書きされます。(スロット1〜3のデータは消えません)',[{l:'はじめる',f:begin},{l:'もどる',f:main}],1);else begin()};
+  const cont=()=>show('どのデータで始めますか？',[0,1,2,3].map(i=>({l:Save.lab(i),sub:has[i]?`${Save.fmt(has[i].t)}　${Save.sub(has[i])}`:'データなし',dis:!has[i],f:()=>{if(Save.loadSlot(i,false)){ReelManager.render();GameManager.hud();begin()}}})).concat([{l:'もどる',f:main}]),1);
+  const conf=()=>show('まだ実装されてないよ',[{l:'もどる',f:main}],1);
+  main()},
+ hl(){(this.bs||[]).forEach((e,i)=>e.classList.toggle('on',i===this.sel))},
+ key(e){const n=(this.bs||[]).length;if(!n)return;if(['ArrowLeft','ArrowUp'].includes(e.key)){this.sel=(this.sel+n-1)%n;this.hl()}else if(['ArrowRight','ArrowDown','Tab'].includes(e.key)){this.sel=(this.sel+1)%n;this.hl()}else if(['Enter',' ','z','Z'].includes(e.key))this.bs[this.sel].click()},
+ press(){if(!this.on||this.dlg)return;this.gest=true;try{if(Snd.ctx&&Snd.ctx.state==='suspended')Snd.ctx.resume()}catch(e){}
   if(this.phase==='intro'){this.reels.forEach(r=>{r.m='done';r.p=r.ti+this.N*4;r.cv.classList.remove('spin');this.drawReel(r)});this.complete();return}
-  if(this.phase==='ready')this.go()},
+  if(this.phase==='ready')this.ask()},
  // 下へ加速度的にスクロール→ふわっと消えて、いつものマップ画面へ
  go(){this.phase='go';this.gt=this.clk;this.cs=0;$('title').classList.add('go');$('tprompt').classList.remove('on');$('tprompt').style.opacity=0;
   try{view('m',null,{nodoor:true})}catch(e){}Snd.seq([392,523,659,784]);const cu=$('tcurtain');cu.style.display='block';cu.style.pointerEvents='auto';cu.style.transform='translate3d(0,642px,0)'},
@@ -579,7 +602,7 @@ const Title={on:true,phase:'intro',W:82,H:246,N:16,PX:139.5,clk:0,last:0,raf:0,r
   if(kB>=1&&!this.fd){this.fd=1;cu.style.display='none';cu.style.pointerEvents='none';this.end()}},
  end(){this.on=false;this.phase='end';cancelAnimationFrame(this.raf);const e=$('title');if(e)e.remove()},
  skip(){this.on=false;this.phase='end';cancelAnimationFrame(this.raf);const e=$('title');if(e)e.remove()}};
-addEventListener('keydown',e=>{if(!Title.on)return;if(['Shift','Control','Alt','Meta','CapsLock'].includes(e.key))return;e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)Title.press()},true);
+addEventListener('keydown',e=>{if(!Title.on)return;if(['Shift','Control','Alt','Meta','CapsLock'].includes(e.key))return;e.preventDefault();e.stopImmediatePropagation();if(Title.dlg){if(!e.repeat)Title.key(e);return}if(!e.repeat)Title.press()},true);
 
 // ===== 設定 (1～6) =====
 const SettingManager={cur:1+Math.floor(Math.random()*6),
@@ -1759,7 +1782,8 @@ $('hpc').onclick=()=>{const G=GameManager;if(!Yami.ready())return G.say('リー�
 $('hpg').onclick=()=>{const G=GameManager;if(!Yami.ready())return G.say('リール停止後・会話終了後に誘発してください');$('dbg').style.display='none';view('m',()=>Happy.later())};
 
 // ===== セーブ(ブラウザのlocalStorageに5秒ごとにオートセーブ。起動時に読み込み) =====
-const Save={KEY:'luckyjug-save-v1',t:0,ok:true,off:false,
+const Save={KEY:'luckyjug-save-v1',PEND:'luckyjug-pending',t:0,ok:true,off:false,
+ key(i){return i?`luckyjug-save-s${i}`:this.KEY}, // 0=オートセーブ(従来のキーのまま) 1〜3=手動スロット
  snap(){return{v:1,
   g:{cr:GameManager.credits,free:GameManager.free},set:SettingManager.cur,
   st:{games:StatisticsManager.games,big:StatisticsManager.big,reg:StatisticsManager.reg,grape:StatisticsManager.grape,cherry:StatisticsManager.cherry,replay:StatisticsManager.replay},
@@ -1774,8 +1798,18 @@ const Save={KEY:'luckyjug-save-v1',t:0,ok:true,off:false,
   hp:{omen:Happy.omen,n:Happy.omenN,at:Happy.omenAt},
   jb:{ok:JobManager.ok,ng:JobManager.ng,drink:JobManager.drink},
   ach:{got:Ach.got,c:Ach.c,vis:Ach.vis},dy:Day.n,ih:JobManager.ih|0,wk:JobManager.wk|0}},
- save(){if(this.off)return false;try{localStorage.setItem(this.KEY,JSON.stringify(Object.assign(this.snap(),{t:Date.now()})));this.t=Date.now();this.ok=true;return true}catch(e){this.ok=false;return false}},
- load(){try{const r=localStorage.getItem(this.KEY);if(!r)return false;this.apply(JSON.parse(r));GameManager.say('セーブデータを読み込んだ');return true}catch(e){return false}},
+ save(i=0){if(this.off)return false;try{localStorage.setItem(this.key(i),JSON.stringify(Object.assign(this.snap(),{t:Date.now(),slot:i})));if(!i)this.t=Date.now();this.ok=true;return true}catch(e){this.ok=false;return false}},
+ autosave(){if(Title.on)return;this.save(0)}, // タイトル画面の間は、オートセーブしない(前のデータを上書きしないため)
+ read(i){try{const r=localStorage.getItem(this.key(i));return r?JSON.parse(r):null}catch(e){return null}},
+ meta(d){return d?{t:d.t||0,cr:d.g?d.g.cr|0:0,day:d.dy||1,games:d.st?d.st.games|0:0}:null},
+ fmt(t){if(!t)return '';const D=new Date(t),p=n=>String(n).padStart(2,'0');return `${D.getMonth()+1}/${D.getDate()} ${p(D.getHours())}:${p(D.getMinutes())}`},
+ lab(i){return i?`スロット${i}`:'オートセーブ'},
+ sub(m){return m?`メダル${m.cr}枚 ${m.day}日目 ${m.games}回転`:'データなし'},
+ load(){return this.loadSlot(0,false)},
+ loadSlot(i,say){const d=this.read(i);if(!d)return false;try{this.apply(d);if(say!==false)GameManager.say('セーブデータを読み込んだ');return true}catch(e){return false}},
+ // ゲーム中のロード: 今の状態(会話や演出の途中など)を引きずらないよう、読み込み直してから、そのスロットを適用する
+ reloadTo(i){this.off=true;try{localStorage.setItem(this.PEND,String(i))}catch(e){this.off=false;return false}location.reload();return true},
+ boot(){let p=null;try{p=localStorage.getItem(this.PEND)}catch(e){}if(p===null)return false;try{localStorage.removeItem(this.PEND)}catch(e){}this.loadSlot(p|0);return true},
  apply(d){const G=GameManager;
   if(d.g){G.credits=d.g.cr|0;G.free=!!d.g.free}
   if(d.set)SettingManager.cur=d.set;
@@ -1795,13 +1829,23 @@ const Save={KEY:'luckyjug-save-v1',t:0,ok:true,off:false,
   if(d.sf&&!Staff.snackGiven&&!Staff.promoDone&&!Ach.got.plush){Staff.lifeDone=false;Staff.hinted=false;Staff.snackOn=false;Staff.lifeStage=Ach.got.vent?2:(Ach.got.life?1:0)}
   if(d.dy)Day.n=d.dy|0;JobManager.ih=d.ih|0;JobManager.wk=d.wk|0;
   $('set').value=SettingManager.cur;Yami.render()},
- clear(){this.off=true;try{localStorage.removeItem(this.KEY)}catch(e){}},
- info(){const i=$('save-info');i.textContent=this.ok?`オートセーブ: ON（5秒ごと） / 最終セーブ: ${this.t?new Date(this.t).toLocaleTimeString():'まだ'}`:'この環境ではセーブできません（ブラウザの保存が無効）'},
- start(){setInterval(()=>this.save(),5000);addEventListener('pagehide',()=>this.save());document.addEventListener('visibilitychange',()=>{if(document.hidden)this.save()})}};
-$('datab').onclick=()=>{$('savep').hidden=false;$('sv-del').textContent='データを削除';Save.info()};
+ // 中断されたデータ(遊んだ記録)があるか
+ hasProgress(){return (StatisticsManager.games|0)>0||(Day.n|0)>1||Object.keys(Ach.got||{}).length>0||(Staff.love|0)>0||(Yami.debt|0)>0},
+ clear(){this.off=true;try{for(let i=0;i<4;i++)localStorage.removeItem(this.key(i))}catch(e){}},
+ info(){const i=$('save-info');i.textContent=this.ok?`オートセーブ: ON / 最終: ${this.t?new Date(this.t).toLocaleTimeString():'まだ'}`:'この環境ではセーブできません（ブラウザの保存が無効）'},
+ start(){setInterval(()=>this.autosave(),5000);addEventListener('pagehide',()=>this.autosave());document.addEventListener('visibilitychange',()=>{if(document.hidden)this.autosave()})},
+ // 「データ」画面: 4つのスロットの一覧(オートセーブ1+手動3)。2度押しで確定(上書き・ロードは「本当に？」)
+ renderSlots(){const box=$('svl');box.innerHTML='';this.info();
+  const arm=(b,fn)=>{b.onclick=()=>{if(b.dataset.arm){fn();return}b.dataset.arm=1;const o=b.textContent;b.textContent='本当に？';setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.textContent=o}},3000)}};
+  for(let i=0;i<4;i++){const d=this.read(i),m=this.meta(d),row=document.createElement('div');row.className='svr';
+   const inf=document.createElement('div');inf.className='svi';const bb=document.createElement('b');bb.textContent=this.lab(i)+(i?'':'(5秒ごと)');const sp=document.createElement('span');sp.textContent=m?`${this.fmt(m.t)}　${this.sub(m)}`:'データなし';inf.append(bb,sp);
+   const bt=document.createElement('div');bt.className='svb';
+   if(i){const sv=document.createElement('button');sv.textContent='セーブ';const doSave=()=>{if(this.save(i))GameManager.say(`スロット${i}にセーブした`);else GameManager.say('セーブできませんでした');this.renderSlots()};if(m)arm(sv,doSave);else sv.onclick=doSave;bt.append(sv)}
+   const ld=document.createElement('button');ld.textContent='ロード';if(!m)ld.disabled=true;else arm(ld,()=>this.reloadTo(i));bt.append(ld);
+   row.append(inf,bt);box.append(row)}}};
+$('datab').onclick=()=>{$('savep').hidden=false;$('sv-del').textContent='全データを削除';Save.renderSlots()};
 $('sv-x').onclick=()=>{$('savep').hidden=true};
-$('sv-now').onclick=()=>{Save.save();Save.info()};
-$('sv-del').onclick=e=>{if(e.target.textContent==='データを削除'){e.target.textContent='本当に削除？もう一度押す';return}Save.clear();location.reload()};
+$('sv-del').onclick=e=>{if(e.target.textContent==='全データを削除'){e.target.textContent='本当に削除？もう一度押す';return}Save.clear();location.reload()};
 
 // ===== 映画館(スタッフと映画に行く) =====
 const Cinema={on:false,t:0,raf:0,last:0,m:null,done:null,
@@ -1957,9 +2001,9 @@ document.addEventListener('dblclick',e=>{if(!/^(INPUT|TEXTAREA)$/.test(e.target.
 document.addEventListener('selectstart',e=>{if(!/^(INPUT|TEXTAREA)$/.test(e.target.tagName))e.preventDefault()});
 $('dbgx').onclick=()=>{$('dbg').style.display='none'};$('statp').onclick=()=>{$('statp').hidden=true};
 $('stb').onclick=()=>{$('statp').hidden=!$('statp').hidden};
-Save.load();ReelManager.render();GameManager.hud();Save.start();
+const __pend=Save.boot(),__nt=/[?&]notitle/.test(location.search)||location.hash==='#notitle';if(__nt&&!__pend)Save.load();ReelManager.render();GameManager.hud();Save.start();
 
 // タイトル画面を始める(?notitle を付けて開くと飛ばせる)
-if(/[?&]notitle/.test(location.search)||location.hash==='#notitle')Title.skip();else{let go=0;const once=()=>{if(go)return;go=1;try{Title.init()}catch(e){Title.skip()}};
+if(__nt||__pend)Title.skip();else{let go=0;const once=()=>{if(go)return;go=1;try{Title.init()}catch(e){Title.skip()}};
   try{document.fonts.load('93px JerseyCharted','SLOVER7BA').then(once,once)}catch(e){once()}setTimeout(once,1500)}
 </script></body></html>
