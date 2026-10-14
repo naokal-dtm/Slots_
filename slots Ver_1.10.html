@@ -377,7 +377,7 @@ img,canvas,svg{-webkit-user-drag:none;-webkit-touch-callout:none}
 input,select,textarea,button{font-family:inherit}
 /* スマホで入力欄をタップしたときの自動ズームを防ぐ(16px未満の文字で起こる) */
 input,select,textarea{font-size:16px}
-#savep{position:absolute;left:12px;right:12px;top:110px;z-index:34;background:rgba(0,0,0,.94);border:2px solid var(--gold);padding:10px;font-size:13px;display:flex;flex-direction:column;gap:8px}
+#savep{position:absolute;left:12px;right:12px;top:110px;max-height:calc(100% - 130px);overflow-y:auto;z-index:34;background:rgba(0,0,0,.94);border:2px solid var(--gold);padding:10px;font-size:13px;display:flex;flex-direction:column;gap:8px}
 #savep[hidden]{display:none}#savep b{color:var(--gold)}#savep button{padding:8px}
 #svl{display:flex;flex-direction:column;gap:6px}
 .svr{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:1px solid #5a4a20;padding:7px 8px;text-align:left;background:#1a0f12;color:#fff}
@@ -399,6 +399,8 @@ input,select,textarea{font-size:16px}
 @keyframes svwarn{0%{transform:scale(.8);opacity:0}40%{transform:scale(1.06);opacity:1}55%{transform:translateX(-5px)}70%{transform:translateX(5px)}85%{transform:translateX(-3px)}100%{transform:none}}
 .svn{animation:svfade .5s ease-out .15s both}
 @keyframes svfade{0%{opacity:0}100%{opacity:.7}}
+#svl textarea{width:100%;height:96px;font-size:16px;background:#120a0c;color:#fff;border:1px solid #5a4a20;padding:6px;margin-top:6px;resize:vertical}
+.svq.wrap{flex-wrap:wrap}.svq.wrap button{flex:1 1 40%}
 .svq{display:flex;gap:6px}.svq button{flex:1;padding:9px 4px;animation:svup .32s cubic-bezier(.15,.85,.25,1) both;animation-delay:calc(.15s + var(--i,0)*.07s)}.svq button:disabled{opacity:.35}
 @keyframes svup{0%{transform:translateY(18px);opacity:0}100%{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){#achn{transition:none}}
@@ -1875,13 +1877,31 @@ const Save={KEY:'luckyjug-save-v1',PEND:'luckyjug-pending',t:0,ok:true,off:false
  // 「データ」画面: ①スロットを選ぶ → ②セーブ/ロードを選ぶ → ③確認(上書き・ロード)
  renderSlots(){const box=$('svl'),st=this.vw||(this.vw={v:'list'});box.innerHTML='';this.info();if(this.msg){$('save-info').textContent=this.msg;this.msg=''}
   $('sv-del').hidden=$('sv-x').hidden=st.v!=='list';
-  const btn=(txt,fn,dis)=>{const b=document.createElement('button');b.textContent=txt;b.onclick=fn;if(dis)b.disabled=true;return b},go=v=>{this.vw=v;this.renderSlots()},div=(c,t)=>{const e=document.createElement('div');e.className=c;if(t)e.textContent=t;return e};
-  if(st.v==='list'){for(let i=0;i<4;i++){const m=this.meta(this.read(i)),b=document.createElement('button');b.className='svr';const l=document.createElement('b');l.textContent=this.lab(i)+(i?'':'(5秒ごと)');const sp=document.createElement('span');sp.textContent=m?`${this.fmt(m.t)}　${this.sub(m)}`:'データなし';b.append(l,sp);b.style.setProperty('--i',i);if(this.hlSlot===i)b.classList.add('saved');b.onclick=()=>go({v:'act',i});box.append(b)}this.hlSlot=-1;return}
-  const i=st.i,m=this.meta(this.read(i));box.append(div('svh sel',`${this.lab(i)}　${m?this.fmt(m.t)+'　'+this.sub(m):'データなし'}`));const idx=a=>[...a.children].forEach((e,k)=>e.style.setProperty('--i',k));
+  const btn=(txt,fn,dis)=>{const b=document.createElement('button');b.textContent=txt;b.onclick=fn;if(dis)b.disabled=true;return b},go=v=>{this.vw=v;this.renderSlots()},div=(c,t)=>{const e=document.createElement('div');e.className=c;if(t)e.textContent=t;return e},idx=a=>[...a.children].forEach((e,k)=>e.style.setProperty('--i',k));
+  if(st.v==='list'){for(let i=0;i<4;i++){const m=this.meta(this.read(i)),b=document.createElement('button');b.className='svr';const l=document.createElement('b');l.textContent=this.lab(i)+(i?'':'(5秒ごと)');const sp=document.createElement('span');sp.textContent=m?`${this.fmt(m.t)}　${this.sub(m)}`:'データなし';b.append(l,sp);b.style.setProperty('--i',i);if(this.hlSlot===i)b.classList.add('saved');b.onclick=()=>go({v:'act',i});box.append(b)}this.hlSlot=-1;const bq=div('svq wrap');bq.append(btn('バックアップを書き出す',()=>go({v:'exp'})),btn('バックアップを読み込む',()=>go({v:'imp'})));idx(bq);box.append(bq);return}
+  // ---- バックアップ: 書き出し / 読み込み / 読み込み内容の確認 ----
+  if(st.v==='exp'){const bk=Backup.build();box.append(div('svh sel','バックアップを書き出す'));box.append(div('svn',bk.count?`スロット1〜3のうち、データのある${bk.count}件を、1つのファイルにまとめます。オートセーブは含みません。ゲームのデータは変わりません。`:'書き出せるデータがありません。（オートセーブは対象外です。残したい進行は、先に、スロット1〜3にセーブしてください）'));
+   const a=div('svq wrap');
+   if(bk.count){a.append(btn('ファイルに保存',()=>{Backup.download(bk.text);this.msg='保存を始めました。ダウンロード（保存先）を確認してください';go({v:'exp'})}),
+    btn('テキストをコピー',()=>{const fb=()=>{this.msg='上のテキストを全部選んで、コピーしてください';go({v:'exp',show:true})};try{navigator.clipboard.writeText(bk.text).then(()=>{this.msg='コピーしました。メモ帳などに貼り付けて、保存してください';go({v:'exp'})},fb)}catch(e){fb()}}))}
+   a.append(btn('もどる',()=>go({v:'list'})));idx(a);box.append(a);
+   if(st.show){const ta=document.createElement('textarea');ta.readOnly=true;ta.value=bk.text;box.append(ta);setTimeout(()=>{ta.focus();ta.select()},50)}return}
+  if(st.v==='imp'){box.append(div('svh sel','バックアップを読み込む'));box.append(div('svn','読み込みは、空いているスロット（1〜3）に追加するだけです。いまあるデータは、消えず、上書きもされません。オートセーブは対象外です。'));if(st.err)box.append(div('svh warn',st.err));
+   const fi=document.createElement('input');fi.type='file';fi.accept='.json,application/json,text/plain';fi.hidden=true;
+   fi.onchange=()=>{const f=fi.files[0];if(!f)return;if(f.size>1e6){go({v:'imp',err:'ファイルが大きすぎます'});return}const r=new FileReader();r.onload=()=>this.impCheck(String(r.result));r.onerror=()=>go({v:'imp',err:'ファイルを読めませんでした'});r.readAsText(f)};
+   const ta=document.createElement('textarea');ta.placeholder='（ファイルの代わりに、書き出したテキストを、ここに貼り付けても読み込めます）';
+   const a=div('svq wrap');a.append(btn('ファイルを選ぶ',()=>fi.click()),btn('貼り付けたテキストを確認',()=>{if(!ta.value.trim()){go({v:'imp',err:'テキストが空です'});return}this.impCheck(ta.value)}),btn('もどる',()=>go({v:'list'})));idx(a);box.append(a,ta,fi);return}
+  if(st.v==='impc'){const im=this.imp;if(!im){go({v:'list'});return}box.append(div('svh sel','この内容で読み込みます'));
+   if(im.auto)box.append(div('svn','※ ファイルに入っていたオートセーブは、読み込み対象外です。'));
+   im.plan.forEach(p=>box.append(div('svn',`${'スロット'+p.s}（${p.m.cr}枚 ${p.m.day}日目 ${p.m.games}回転）${p.t===null?' → 空きがないため、読み込めません':' → '+this.lab(p.t)+'（空き）に追加'}`)));
+   const ok=im.plan.some(p=>p.t!==null);if(!ok)box.append(div('svh warn','空いているスロットがありません。先に、不要なデータを整理して、手動スロットを空けてください。'));
+   const a=div('svq');a.append(btn('読み込む',()=>{const r=Backup.write(im.plan,im.slots);this.imp=null;this.msg=r.fail.length?`${r.done.length}件を読み込みました。${r.fail.length}件は失敗しました`:`${r.done.length}件を読み込みました（${r.done.map(p=>this.lab(p.t)).join('、')}）`;this.hlSlot=r.done.length?r.done[0].t:-1;go({v:'list'})},!ok),btn('やめる',()=>{this.imp=null;go({v:'list'})}));idx(a);box.append(a);return}
+  const i=st.i,m=this.meta(this.read(i));box.append(div('svh sel',`${this.lab(i)}　${m?this.fmt(m.t)+'　'+this.sub(m):'データなし'}`));
   if(st.v==='act'){const a=div('svq');a.append(btn('セーブ',()=>{if(m)go({v:'conf',i,k:'save'});else this.doSave(i)},!i),btn('ロード',()=>go({v:'conf',i,k:'load'}),!m),btn('もどる',()=>go({v:'list'})));
    idx(a);if(!i)box.append(div('svn','オートセーブ枠は自動で書き換わります。ロードだけできます。'));box.append(a);return}
   box.append(div('svh warn',st.k==='save'?'既に保存されたデータがあります。上書きしますか？':'セーブしていないデータは失われます。ロードしますか？'));
   const a=div('svq');a.append(btn('はい',()=>{if(st.k==='save')this.doSave(i);else{Ld.show();setTimeout(()=>{if(!this.reloadTo(i))Ld.hide()},180)}}),btn('いいえ',()=>go({v:'act',i})));idx(a);box.append(a)},
+ impCheck(text){const r=Backup.parse(text);if(r.err){this.vw={v:'imp',err:r.err};this.renderSlots();return}this.imp={slots:r.slots,auto:r.auto,plan:Backup.plan(r.slots)};this.vw={v:'impc'};this.renderSlots()},
  doSave(i){this.msg=this.save(i)?`スロット${i}にセーブしました`:'セーブできませんでした';GameManager.say(this.msg);this.vw={v:'list'};this.hlSlot=i;this.renderSlots()}};
 $('datab').onclick=()=>{$('savep').hidden=false;$('sv-del').textContent='全データを削除';Save.vw={v:'list'};Save.renderSlots()};
 $('sv-x').onclick=()=>{$('savep').hidden=true};
@@ -2006,6 +2026,32 @@ const Got={q:[],busy:false,
  next(){if(this.busy||!this.q.length)return;this.busy=true;const n=this.q.shift(),el=$('got');
   el.innerHTML=n.length>=9?`${n}を<br>手に入れた！`:`${n}を手に入れた！`;el.hidden=false;el.classList.remove('on');void el.offsetWidth;el.classList.add('on');Snd.seq([880,1175]);
   setTimeout(()=>{el.hidden=true;el.classList.remove('on');this.busy=false;this.next()},2400)}};
+
+// ===== バックアップ: 書き出し・読み込み =====
+// 今ブラウザにある手動スロット(1〜3)を、1つのファイル(またはテキスト)にまとめる。オートセーブは含めない。
+// 読み込みは「空いているスロットに追加するだけ」。今あるデータは、消さない・上書きしない。
+const Backup={
+ sum(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(16)},
+ // 書き出し用のテキストを作る(ゲームのデータは変更しない)
+ build(){const slots={};for(let i=1;i<4;i++){const d=Save.read(i);if(d)slots[i]=d}/* オートセーブ(0)は含めない */const body=JSON.stringify(slots);
+  return {text:JSON.stringify({app:'luckyjug',kind:'backup',format:1,exported:new Date().toISOString(),count:Object.keys(slots).length,sum:this.sum(body),slots}),count:Object.keys(slots).length}},
+ fname(){const n=new Date(),p=x=>String(x).padStart(2,'0');return `luckyjug-backup-${n.getFullYear()}${p(n.getMonth()+1)}${p(n.getDate())}-${p(n.getHours())}${p(n.getMinutes())}.json`},
+ download(text){const a=document.createElement('a');a.download=this.fname();a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)},
+ // 読み込んだテキストを検査する(形式・改ざんや途中切れ・中身)。問題があれば理由を返す
+ parse(text){let o;try{o=JSON.parse(text)}catch(e){return {err:'ファイルの形式が正しくありません（途中で切れているか、別のファイルです）'}}
+  if(!o||o.app!=='luckyjug'||o.kind!=='backup')return {err:'このゲームのバックアップファイルではありません'};
+  if(o.format!==1)return {err:'対応していない形式です（format '+o.format+'）'};
+  if(!o.slots||typeof o.slots!=='object')return {err:'データが入っていません'};
+  if(this.sum(JSON.stringify(o.slots))!==o.sum)return {err:'データが壊れています（途中で切れたか、書き換えられた可能性があります）'};
+  let auto=false;const slots={};for(const k of Object.keys(o.slots)){const i=+k,d=o.slots[k];if(i===0){auto=true;continue}if(!(i>=1&&i<=3)||!d||typeof d!=='object')continue;
+   if(d.v!==1||typeof d.g!=='object'||d.g===null)return {err:'スロット'+k+'のデータが、読み込める形ではありません'};slots[i]=d}
+  if(!Object.keys(slots).length)return {err:auto?'読み込めるデータがありません（このファイルには、オートセーブしか入っていません。オートセーブは読み込めません）':'読み込めるデータがありません'};return {slots,auto,exported:o.exported}},
+ // どのスロットに入れるかを決める。空いているスロットだけを使う(同じ番号が空いていればそこへ、空いていなければ、空いている手動スロットへ)
+ plan(slots){const used=new Set([1,2,3].filter(i=>Save.read(i))),out=[];
+  Object.keys(slots).map(Number).sort().forEach(s=>{let t=null;if(!used.has(s))t=s;else for(const c of [1,2,3])if(!used.has(c)){t=c;break}
+   if(t!==null)used.add(t);out.push({s,t,m:Save.meta(slots[s])})});return out},
+ // 書き込み: 1件ずつ書いて、読み戻して確認する。既存のデータには、触らない
+ write(plan,slots){const done=[],fail=[];plan.forEach(p=>{if(p.t===null)return;try{const o=Object.assign({},slots[p.s],{slot:p.t});localStorage.setItem(Save.key(p.t),JSON.stringify(o));const b=Save.read(p.t);if(b&&JSON.stringify(b)===JSON.stringify(o))done.push(p);else fail.push(p)}catch(e){fail.push(p)}});return {done,fail}}};
 
 // ===== 入力 =====
 $('lever').onclick=()=>GameManager.lever();
