@@ -399,6 +399,7 @@ input,select,textarea{font-size:16px}
 @keyframes svwarn{0%{transform:scale(.8);opacity:0}40%{transform:scale(1.06);opacity:1}55%{transform:translateX(-5px)}70%{transform:translateX(5px)}85%{transform:translateX(-3px)}100%{transform:none}}
 .svn{animation:svfade .5s ease-out .15s both}
 @keyframes svfade{0%{opacity:0}100%{opacity:.7}}
+#svl .svin{width:100%;padding:9px;margin:4px 0;background:#120a0c;color:#fff;border:1px solid #5a4a20}
 #svl textarea{width:100%;height:96px;font-size:16px;background:#120a0c;color:#fff;border:1px solid #5a4a20;padding:6px;margin-top:6px;resize:vertical}
 .svq.wrap{flex-wrap:wrap}.svq.wrap button{flex:1 1 40%}
 .svq{display:flex;gap:6px}.svq button{flex:1;padding:9px 4px;animation:svup .32s cubic-bezier(.15,.85,.25,1) both;animation-delay:calc(.15s + var(--i,0)*.07s)}.svq button:disabled{opacity:.35}
@@ -419,6 +420,8 @@ html.ld #ldg{display:flex}
 @keyframes ldb{0%{transform:translateY(0)}25%{transform:translateY(-6px)}50%,100%{transform:translateY(0)}}
 </style></head><body>
 <script id="ld0">try{if(localStorage.getItem('luckyjug-pending')!==null)document.documentElement.className+=' ld'}catch(e){}</script>
+<script src="supabase.min.js"></script>
+<script src="online-config.js"></script>
 <div id="ldg"><div class="ldi">NOW LOADING<i></i><i></i><i></i></div></div>
 <svg width="0" height="0" style="position:absolute"><filter id="vb" x="0" y="-10%" width="100%" height="120%"><feGaussianBlur stdDeviation="0 3"/></filter></svg>
 <div class="m">
@@ -1849,7 +1852,10 @@ const Save={KEY:'luckyjug-save-v1',PEND:'luckyjug-pending',t:0,ok:true,off:false
  loadSlot(i,say){const d=this.read(i);if(!d)return false;try{this.apply(d);if(say!==false)GameManager.say('セーブデータを読み込んだ');return true}catch(e){return false}},
  // ゲーム中のロード: 今の状態(会話や演出の途中など)を引きずらないよう、読み込み直してから、そのスロットを適用する
  reloadTo(i){this.off=true;try{localStorage.setItem(this.PEND,String(i))}catch(e){this.off=false;return false}location.reload();return true},
- boot(){let p=null;try{p=localStorage.getItem(this.PEND)}catch(e){}if(p===null)return false;try{localStorage.removeItem(this.PEND)}catch(e){}this.loadSlot(p|0);return true},
+ reloadData(d){this.off=true;try{localStorage.setItem(this.PEND,'D:'+JSON.stringify(d))}catch(e){this.off=false;return false}location.reload();return true}, // オンラインから取得したデータで、読み込み直す
+ boot(){let p=null;try{p=localStorage.getItem(this.PEND)}catch(e){}if(p===null)return false;try{localStorage.removeItem(this.PEND)}catch(e){}
+  if(String(p).startsWith('D:')){try{const d=JSON.parse(p.slice(2));if(d&&d.v===1&&d.g&&typeof d.g==='object'){this.apply(d);GameManager.say('オンラインのデータを読み込んだ')}}catch(e){}return true}
+  this.loadSlot(p|0);return true},
  apply(d){const G=GameManager;
   if(d.g){G.credits=d.g.cr|0;G.free=!!d.g.free}
   if(d.set)SettingManager.cur=d.set;
@@ -1878,7 +1884,8 @@ const Save={KEY:'luckyjug-save-v1',PEND:'luckyjug-pending',t:0,ok:true,off:false
  renderSlots(){const box=$('svl'),st=this.vw||(this.vw={v:'list'});box.innerHTML='';this.info();if(this.msg){$('save-info').textContent=this.msg;this.msg=''}
   $('sv-del').hidden=$('sv-x').hidden=st.v!=='list';
   const btn=(txt,fn,dis)=>{const b=document.createElement('button');b.textContent=txt;b.onclick=fn;if(dis)b.disabled=true;return b},go=v=>{this.vw=v;this.renderSlots()},div=(c,t)=>{const e=document.createElement('div');e.className=c;if(t)e.textContent=t;return e},idx=a=>[...a.children].forEach((e,k)=>e.style.setProperty('--i',k));
-  if(st.v==='list'){for(let i=0;i<4;i++){const m=this.meta(this.read(i)),b=document.createElement('button');b.className='svr';const l=document.createElement('b');l.textContent=this.lab(i)+(i?'':'(5秒ごと)');const sp=document.createElement('span');sp.textContent=m?`${this.fmt(m.t)}　${this.sub(m)}`:'データなし';b.append(l,sp);b.style.setProperty('--i',i);if(this.hlSlot===i)b.classList.add('saved');b.onclick=()=>go({v:'act',i});box.append(b)}this.hlSlot=-1;const bq=div('svq wrap');bq.append(btn('バックアップを書き出す',()=>go({v:'exp'})),btn('バックアップを読み込む',()=>go({v:'imp'})));idx(bq);box.append(bq);return}
+  if(String(st.v).startsWith('on')){Online.render(box,st,go,btn,div,idx);return}
+  if(st.v==='list'){for(let i=0;i<4;i++){const m=this.meta(this.read(i)),b=document.createElement('button');b.className='svr';const l=document.createElement('b');l.textContent=this.lab(i)+(i?'':'(5秒ごと)');const sp=document.createElement('span');sp.textContent=m?`${this.fmt(m.t)}　${this.sub(m)}`:'データなし';b.append(l,sp);b.style.setProperty('--i',i);if(this.hlSlot===i)b.classList.add('saved');b.onclick=()=>go({v:'act',i});box.append(b)}this.hlSlot=-1;const oq=div('svq');oq.append(btn('オンラインセーブ',()=>go({v:'on'})));idx(oq);box.append(oq);const bq=div('svq wrap');bq.append(btn('バックアップを書き出す',()=>go({v:'exp'})),btn('バックアップを読み込む',()=>go({v:'imp'})));idx(bq);box.append(bq);return}
   // ---- バックアップ: 書き出し / 読み込み / 読み込み内容の確認 ----
   if(st.v==='exp'){const bk=Backup.build();box.append(div('svh sel','バックアップを書き出す'));box.append(div('svn',bk.count?`スロット1〜3のうち、データのある${bk.count}件を、1つのファイルにまとめます。オートセーブは含みません。ゲームのデータは変わりません。`:'書き出せるデータがありません。（オートセーブは対象外です。残したい進行は、先に、スロット1〜3にセーブしてください）'));
    const a=div('svq wrap');
@@ -2027,6 +2034,70 @@ const Got={q:[],busy:false,
   el.innerHTML=n.length>=9?`${n}を<br>手に入れた！`:`${n}を手に入れた！`;el.hidden=false;el.classList.remove('on');void el.offsetWidth;el.classList.add('on');Snd.seq([880,1175]);
   setTimeout(()=>{el.hidden=true;el.classList.remove('on');this.busy=false;this.next()},2400)}};
 
+// ===== オンラインセーブ(Supabase): ユーザー名+パスワード / 手動3枠 =====
+// ユーザー名は、内部で「ユーザー名@(実在しないドメイン)」に変換して、Supabaseのログインに渡す。メールは送られない。
+const Online={cfg:window.ONLINE_CONFIG||null,sb:null,user:null,rows:null,busy:false,
+ init(){try{if(!this.cfg||!this.cfg.url||!this.cfg.key||!window.supabase)return;this.sb=window.supabase.createClient(this.cfg.url,this.cfg.key,{auth:{persistSession:true,autoRefreshToken:true}});
+  this.sb.auth.getSession().then(r=>{this.user=r.data&&r.data.session?r.data.session.user:null;this.ui()}).catch(()=>{});
+  this.sb.auth.onAuthStateChange((e,se)=>{this.user=se?se.user:null;this.rows=null;this.ui()})}catch(e){this.sb=null}},
+ ok(){return !!this.sb},
+ name(){return this.user?String(this.user.email||'').split('@')[0]:''},
+ mail(u){return u+'@'+((this.cfg&&this.cfg.userDomain)||'luckyjug.invalid')},
+ T(p){return Promise.race([p,new Promise((_,j)=>setTimeout(()=>j(new Error('timeout')),15000))])},
+ E(ja){return Object.assign(new Error(ja),{ja})},
+ ja(e){if(e&&e.ja)return e.ja;const m=String((e&&e.message)||e||'');
+  if(/timeout|fetch|network|Failed|Load failed/i.test(m))return '通信に失敗しました。電波やネットワークを確認して、もう一度お試しください';
+  if(/Invalid login/i.test(m))return 'ユーザー名またはパスワードが違います';
+  if(/already registered|already been registered|user_already_exists/i.test(m))return 'そのユーザー名は、すでに使われています';
+  if(/email/i.test(m)&&/invalid/i.test(m))return 'このユーザー名は、現在の設定では登録できません（管理者に連絡してください）';
+  if(/password/i.test(m)&&/(least|short|weak)/i.test(m))return 'パスワードが短すぎます（8文字以上にしてください）';
+  if(/rate limit|too many/i.test(m))return '短い時間に操作が多すぎます。しばらく待ってから、もう一度お試しください';
+  return '失敗しました：'+m.slice(0,80)},
+ chk(u,pw){u=String(u||'').trim().toLowerCase();if(!/^[a-z0-9_]{3,16}$/.test(u))throw this.E('ユーザー名は、半角の英数字とアンダーバーで、3〜16文字にしてください');if(String(pw||'').length<8)throw this.E('パスワードは、8文字以上にしてください');return u},
+ async signUp(u,pw){const n=this.chk(u,pw),r=await this.T(this.sb.auth.signUp({email:this.mail(n),password:pw}));if(r.error)throw r.error;
+  if(!r.data||!r.data.session){const r2=await this.T(this.sb.auth.signInWithPassword({email:this.mail(n),password:pw}));if(r2.error)throw this.E('登録はできましたが、ログインできませんでした。Supabaseの「Confirm email」がONのままの可能性があります')}return n},
+ async signIn(u,pw){const n=this.chk(u,pw),r=await this.T(this.sb.auth.signInWithPassword({email:this.mail(n),password:pw}));if(r.error)throw r.error;return n},
+ async signOut(){const r=await this.T(this.sb.auth.signOut());if(r&&r.error)throw r.error;this.rows=null},
+ canon(o){if(Array.isArray(o))return '['+o.map(x=>this.canon(x)).join(',')+']';if(o&&typeof o==='object')return '{'+Object.keys(o).sort().map(k=>JSON.stringify(k)+':'+this.canon(o[k])).join(',')+'}';return JSON.stringify(o)},
+ valid(d){return !!(d&&d.v===1&&d.g&&typeof d.g==='object')},
+ async fetch(){const r=await this.T(this.sb.from('game_saves').select('slot_number,updated_at,save_data').order('slot_number'));if(r.error)throw r.error;const o={};(r.data||[]).forEach(x=>{o[x.slot_number]=x});this.rows=o;return o},
+ meta(i){const x=this.rows&&this.rows[i];if(!x||!this.valid(x.save_data))return null;return Save.meta(Object.assign({},x.save_data,{t:x.save_data.t||Date.parse(x.updated_at)}))},
+ async put(i,data,expected){const r=await this.T(this.sb.rpc('save_slot',{p_slot:i,p_data:data,p_expected:expected||null}));if(r.error)throw r.error;return r.data},
+ // 保存: 直前に最新の状態を取得 → 関数で保存(別の端末で更新されていたら、競合で止まる) → 読み戻して確認
+ async save(i){const rows=await this.fetch(),cur=rows[i],data=JSON.parse(JSON.stringify(Object.assign(Save.snap(),{t:Date.now(),slot:i}))); // 送る形(JSON)に揃えてから比べる
+  try{const res=await this.put(i,data,cur?cur.updated_at:null);if(!res||!res.ok)throw this.E('別の端末などで、先にデータが更新されていました。一覧を開き直して確認してから、もう一度お試しください');
+   const r2=await this.fetch();if(!r2[i]||this.canon(r2[i].save_data)!==this.canon(data))throw this.E('保存の確認ができませんでした。もう一度、お試しください');
+   try{localStorage.removeItem('luckyjug-outbox-'+i)}catch(e){}return true}
+  catch(e){try{localStorage.setItem('luckyjug-outbox-'+i,JSON.stringify(data))}catch(x){}throw e}}, // 失敗したときは、この端末に控えを残す(ゲームの状態は、変えない)
+ async load(i){const rows=await this.fetch(),x=rows[i];if(!x)throw this.E('そのスロットには、データがありません');if(!this.valid(x.save_data))throw this.E('データの形式が正しくありません');return x.save_data},
+ // 移行: この端末のスロット1〜3を、オンラインの「空いている同じ番号」の枠へコピー(使用済みの枠は触らない・この端末のデータは消さない)
+ plan(){const out=[];for(let i=1;i<4;i++){const d=Save.read(i);if(!d)continue;out.push({i,d,m:Save.meta(d),skip:!!(this.rows&&this.rows[i])})}return out},
+ async migrate(pl){const rep={done:[],skip:[],fail:[]};for(const p of pl){if(p.skip){rep.skip.push(p.i);continue}
+   try{const res=await this.put(p.i,p.d,null);if(!res||!res.ok){rep.skip.push(p.i);continue}const r2=await this.fetch();if(r2[p.i]&&this.canon(r2[p.i].save_data)===this.canon(p.d))rep.done.push(p.i);else rep.fail.push(p.i)}catch(e){rep.fail.push(p.i)}}
+  try{await this.fetch()}catch(e){}return rep},
+ ui(){if(!$('savep').hidden&&Save.vw&&String(Save.vw.v).startsWith('on'))Save.renderSlots()},
+ // 通信を伴う操作: 通信中の表示 → 成功/失敗の表示(失敗してもゲームは変わらない)
+ act(label,fn,done){if(this.busy)return;this.busy=true;$('save-info').textContent=label;fn().then(r=>{this.busy=false;if(done)done(r)}).catch(e=>{this.busy=false;Save.msg=this.ja(e);Save.renderSlots()})},
+ // データ画面の「オンライン」の各画面
+ render(box,st,go,btn,div,idx){const S=Save;
+  if(!this.ok()){box.append(div('svh sel','オンラインセーブ'),div('svn','オンライン機能は、まだ設定されていません。（このゲームは、これまでどおり、この端末の中だけで遊べます）'));const a=div('svq');a.append(btn('もどる',()=>go({v:'list'})));idx(a);box.append(a);return}
+  if(!this.user){box.append(div('svh sel','オンラインセーブ（ログイン）'));box.append(div('svn','ユーザー名（半角英数字とアンダーバー、3〜16文字）と、パスワード（8文字以上）で、ログインできます。パスワードを忘れると、復旧できません。バックアップの書き出しも、お忘れなく。'));
+   const mk=(ph,type,ac)=>{const e=document.createElement('input');e.type=type;e.placeholder=ph;e.autocomplete=ac;e.autocapitalize='off';e.spellcheck=false;e.className='svin';return e};
+   const u=mk('ユーザー名','text','username'),p=mk('パスワード','password','current-password');box.append(u,p);
+   const a=div('svq wrap');a.append(btn('ログイン',()=>this.act('ログイン中…',()=>this.signIn(u.value,p.value),()=>{S.msg='ログインしました';go({v:'on'})})),btn('新規登録',()=>this.act('登録中…',()=>this.signUp(u.value,p.value),()=>{S.msg='登録して、ログインしました';go({v:'on'})})),btn('もどる',()=>go({v:'list'})));idx(a);box.append(a);return}
+  if(st.v==='on'){box.append(div('svh sel',`ログイン中：${this.name()}`));
+   if(!this.rows){box.append(div('svn','読み込み中…'));this.act('オンラインのデータを読み込み中…',()=>this.fetch(),()=>S.renderSlots());return}
+   for(let i=1;i<4;i++){const m=this.meta(i),b=document.createElement('button');b.className='svr';const l=document.createElement('b');l.textContent='オンライン スロット'+i;const sp=document.createElement('span');sp.textContent=m?`${S.fmt(m.t)}　${S.sub(m)}`:'データなし';b.append(l,sp);b.style.setProperty('--i',i-1);b.onclick=()=>go({v:'onact',i});box.append(b)}
+   const a=div('svq wrap');a.append(btn('この端末のセーブをコピー',()=>go({v:'onmig'})),btn('ログアウト',()=>this.act('ログアウト中…',()=>this.signOut(),()=>{S.msg='ログアウトしました';go({v:'on'})})),btn('もどる',()=>go({v:'list'})));idx(a);box.append(a);return}
+  if(st.v==='onmig'){const pl=this.plan();box.append(div('svh sel','この端末のセーブを、オンラインにコピー'));
+   if(!pl.length){box.append(div('svn','この端末の、スロット1〜3に、コピーできるデータがありません。（オートセーブは対象外です。残したい進行は、先にスロット1〜3にセーブしてください）'))}
+   else{box.append(div('svn','この端末のデータは、消えません。オンラインの空いている同じ番号の枠にだけ、コピーします。'));pl.forEach(p=>box.append(div('svn',`スロット${p.i}（${p.m.cr}枚 ${p.m.day}日目 ${p.m.games}回転）${p.skip?' → オンラインの枠が使用済みのため、コピーしません':' → オンライン スロット'+p.i+'（空き）にコピー'}`)))}
+   const ok=pl.some(p=>!p.skip),a=div('svq');a.append(btn('コピーする',()=>this.act('コピー中…',()=>this.migrate(pl),r=>{S.msg=`${r.done.length}件をコピーしました`+(r.skip.length?`（${r.skip.length}件は、使用済みのためスキップ）`:'')+(r.fail.length?`。${r.fail.length}件は失敗しました（この端末のデータは、そのままです）`:'');go({v:'on'})}),!ok),btn('やめる',()=>go({v:'on'})));idx(a);box.append(a);return}
+  const i=st.i,m=this.meta(i);box.append(div('svh sel',`オンライン スロット${i}　${m?S.fmt(m.t)+'　'+S.sub(m):'データなし'}`));
+  if(st.v==='onact'){const a=div('svq');a.append(btn('セーブ',()=>{if(m)go({v:'onconf',i,k:'save'});else this.act('セーブ中…',()=>this.save(i),()=>{S.msg=`オンライン スロット${i}にセーブしました`;GameManager.say(S.msg);go({v:'on'})})}),btn('ロード',()=>go({v:'onconf',i,k:'load'}),!m),btn('もどる',()=>go({v:'on'})));idx(a);box.append(a);return}
+  box.append(div('svh warn',st.k==='save'?'既に保存されたデータがあります。上書きしますか？':'セーブしていないデータは失われます。ロードしますか？'));
+  const a=div('svq');a.append(btn('はい',()=>{if(st.k==='save')this.act('セーブ中…',()=>this.save(i),()=>{S.msg=`オンライン スロット${i}にセーブしました`;GameManager.say(S.msg);go({v:'on'})});else this.act('ロード中…',()=>this.load(i),d=>{Ld.show();setTimeout(()=>{if(!S.reloadData(d))Ld.hide()},180)})}),btn('いいえ',()=>go({v:'onact',i})));idx(a);box.append(a)}};
+
 // ===== バックアップ: 書き出し・読み込み =====
 // 今ブラウザにある手動スロット(1〜3)を、1つのファイル(またはテキスト)にまとめる。オートセーブは含めない。
 // 読み込みは「空いているスロットに追加するだけ」。今あるデータは、消さない・上書きしない。
@@ -2090,6 +2161,7 @@ $('stb').onclick=()=>{$('statp').hidden=!$('statp').hidden};
 const __pend=Save.boot(),__nt=/[?&]notitle/.test(location.search)||location.hash==='#notitle';if(__nt&&!__pend)Save.load();ReelManager.render();GameManager.hud();Save.start();
 
 // タイトル画面を始める(?notitle を付けて開くと飛ばせる)
+try{Online.init()}catch(e){}
 if(document.documentElement.classList.contains('ld'))setTimeout(()=>Ld.hide(),450); // 読み込み直しで始まったときは、少し見せてから消す
 if(__nt||__pend)Title.skip();else{let go=0;const once=()=>{if(go)return;go=1;try{Title.init()}catch(e){Title.skip()}};
   try{document.fonts.load('93px JerseyCharted','SLOVER7BA').then(once,once)}catch(e){once()}setTimeout(once,1500)}
