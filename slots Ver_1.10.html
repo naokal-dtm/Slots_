@@ -318,6 +318,15 @@ h1,.tabs{display:none}
 #tdb{display:flex;gap:10px;margin-top:12px}
 #tdb button{flex:1;font:inherit;font-size:15px;padding:9px 4px;background:#efe5c8;color:#2b1d12;border:3px solid #3b2a1a;box-shadow:3px 3px 0 #3b2a1a;cursor:pointer}
 #tdb button.on{background:#ffd75e}
+#tdbox{animation:tdpop .24s ease-out}
+@keyframes tdpop{0%{transform:translateY(-50%) scale(.82);opacity:0}100%{transform:translateY(-50%) scale(1);opacity:1}}
+#tdb button{position:relative;animation:tdin .4s cubic-bezier(.15,.85,.25,1) both;animation-delay:calc(var(--i,0)*.07s)}
+@keyframes tdin{0%{transform:translateX(70px);opacity:0}100%{transform:translateX(0);opacity:1}}
+#tdb button.on::before{content:'▶';position:absolute;left:12px;top:50%;margin-top:-9px;font-size:13px;animation:tdcur .5s steps(2) infinite}
+@keyframes tdcur{0%{transform:translateX(0)}100%{transform:translateX(5px)}}
+#tdb button.on{animation:tdin .4s cubic-bezier(.15,.85,.25,1) both,tdglow 1.1s ease-in-out .5s infinite alternate;animation-delay:calc(var(--i,0)*.07s),.5s}
+@keyframes tdglow{0%{background:#ffd75e}100%{background:#ffec9e}}
+#tdb button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #3b2a1a}
 #tdb.col{flex-direction:column}#tdb button small{display:block;font-size:11px;opacity:.75;margin-top:3px}#tdb button.dis{opacity:.4;cursor:default}#tdt:empty{display:none;min-height:0}
 @keyframes tfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @keyframes tglow{0%{filter:drop-shadow(3px 3px 0 #ff3d8b)}100%{filter:drop-shadow(3px 3px 0 #29c7ff)}}
@@ -371,9 +380,27 @@ input,select,textarea{font-size:16px}
 #savep{position:absolute;left:12px;right:12px;top:110px;z-index:34;background:rgba(0,0,0,.94);border:2px solid var(--gold);padding:10px;font-size:13px;display:flex;flex-direction:column;gap:8px}
 #savep[hidden]{display:none}#savep b{color:var(--gold)}#savep button{padding:8px}
 #svl{display:flex;flex-direction:column;gap:6px}
-.svr{display:flex;align-items:center;gap:6px;border:1px solid #5a4a20;padding:6px}
-.svi{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.svi b{font-size:13px}.svi span{font-size:11px;opacity:.85;word-break:break-all}
-.svb{display:flex;flex-direction:column;gap:4px}.svb button{padding:5px 8px;font-size:12px;min-width:64px}.svb button:disabled{opacity:.35}
+.svr{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:1px solid #5a4a20;padding:7px 8px;text-align:left;background:#1a0f12;color:#fff}
+.svr b{font-size:13px;color:var(--gold)}.svr span{font-size:11px;opacity:.85;word-break:break-all}
+.svh{font-size:13px;line-height:1.6;padding:6px 2px}.svn{font-size:11px;opacity:.7;padding:0 2px 4px}
+/* データ画面のアニメーション: 開く→一覧が右から順に滑り込む→選んだスロットは金色に光って出る→ボタンは下から順にせり上がる→確認は目立つように揺れる */
+#savep{animation:svpop .22s ease-out}
+@keyframes svpop{0%{transform:scale(.9);opacity:0}100%{transform:scale(1);opacity:1}}
+.svr{animation:svin .38s cubic-bezier(.15,.85,.25,1) both;animation-delay:calc(var(--i,0)*.06s)}
+@keyframes svin{0%{transform:translateX(60px);opacity:0}100%{transform:translateX(0);opacity:1}}
+.svr.saved{animation:svin .38s cubic-bezier(.15,.85,.25,1) both,svflash 1.1s ease-out .4s both;animation-delay:calc(var(--i,0)*.06s),.4s}
+@keyframes svflash{0%{background:#2c8a45;border-color:#7dffa0}100%{background:#1a0f12;border-color:#5a4a20}}
+.svh{animation:svhd .4s ease-out both}
+.svh.sel{border-left:4px solid var(--gold);padding-left:8px;background:rgba(255,215,94,.12)}
+.svh.sel::before{content:'▶ ';color:var(--gold);animation:svcur .5s steps(2) infinite}
+@keyframes svcur{0%{opacity:1}100%{opacity:.25}}
+@keyframes svhd{0%{transform:translateX(-30px) scale(.94);opacity:0;background:#ffd75e;color:#000}55%{background:#ffd75e;color:#000}100%{transform:none;opacity:1}}
+.svh.warn{animation:svwarn .5s ease-out both;border:2px solid #ff6b6b;background:rgba(255,80,80,.14);padding:8px}
+@keyframes svwarn{0%{transform:scale(.8);opacity:0}40%{transform:scale(1.06);opacity:1}55%{transform:translateX(-5px)}70%{transform:translateX(5px)}85%{transform:translateX(-3px)}100%{transform:none}}
+.svn{animation:svfade .5s ease-out .15s both}
+@keyframes svfade{0%{opacity:0}100%{opacity:.7}}
+.svq{display:flex;gap:6px}.svq button{flex:1;padding:9px 4px;animation:svup .32s cubic-bezier(.15,.85,.25,1) both;animation-delay:calc(.15s + var(--i,0)*.07s)}.svq button:disabled{opacity:.35}
+@keyframes svup{0%{transform:translateY(18px);opacity:0}100%{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){#achn{transition:none}}
 #jambubs{position:absolute;inset:0;pointer-events:none;z-index:1}
 .jb{position:absolute;left:0;top:78%;transform:translateY(-100%);white-space:nowrap;background:#fbf6e6;color:#3a2a20;border:3px solid #3a2a20;padding:5px 9px;font-family:"DotGothic16","DotGothic",monospace;font-size:14px;line-height:1.25;text-align:center;box-shadow:3px 3px 0 #3a2a20}
@@ -381,7 +408,16 @@ input,select,textarea{font-size:16px}
 .jb.pop{animation:jpop .18s ease-out}
 @keyframes jpop{from{transform:translateY(-100%) scale(.5)}to{transform:translateY(-100%) scale(1)}}
 @media (prefers-reduced-motion:reduce){.jb.pop{animation:none}}
+#ldg{position:fixed;inset:0;z-index:9999;background:#06040c;display:none}
+html.ld #ldg{display:flex}
+#ldg.out{opacity:0;transition:opacity .3s}
+.ldi{position:absolute;right:16px;bottom:16px;display:flex;align-items:flex-end;gap:5px;color:#ffd75e;font-size:13px;letter-spacing:1px;line-height:1}
+.ldi i{width:6px;height:6px;background:#ffd75e;display:block;animation:ldb .8s steps(1) infinite}
+.ldi i:nth-child(2){animation-delay:.2s}.ldi i:nth-child(3){animation-delay:.4s}
+@keyframes ldb{0%{transform:translateY(0)}25%{transform:translateY(-6px)}50%,100%{transform:translateY(0)}}
 </style></head><body>
+<script id="ld0">try{if(localStorage.getItem('luckyjug-pending')!==null)document.documentElement.className+=' ld'}catch(e){}</script>
+<div id="ldg"><div class="ldi">NOW LOADING<i></i><i></i><i></i></div></div>
 <svg width="0" height="0" style="position:absolute"><filter id="vb" x="0" y="-10%" width="100%" height="120%"><feGaussianBlur stdDeviation="0 3"/></filter></svg>
 <div class="m">
 <div id="phone"><div class="ph"><div class="scr"><div class="nt"></div><div class="av">上</div><div class="nm">上司</div><div id="pst">着信中…</div><div id="ptxt"></div><div class="pb" id="pbt"><button id="prej">拒否</button><button id="pans">応答</button></div></div></div></div>
@@ -575,12 +611,12 @@ const Title={on:true,phase:'intro',W:82,H:246,N:16,PX:139.5,clk:0,last:0,raf:0,r
   this.reelStep(dt);if(this.phase==='go')this.scroll();if(now-this.last>=33&&!this.hid){this.last=now;this.draw(this.clk)}},
  // タップしたら「はじめから / つづきから / こんふぃぐ」を出す
  ask(){const d=$('tdlg'),t=$('tdt'),b=$('tdb');this.dlg=1;d.hidden=false;d.onpointerdown=e=>e.stopPropagation();$('tprompt').classList.remove('on');$('tprompt').style.opacity=0;
-  const show=(txt,btns,col)=>{t.textContent=txt;b.className=col?'col':'';b.innerHTML='';btns.forEach(x=>{const e=document.createElement('button');const l=document.createElement('span');l.textContent=x.l;e.append(l);if(x.sub){const q=document.createElement('small');q.textContent=x.sub;e.append(q)}if(x.dis)e.classList.add('dis');e.onclick=ev=>{ev.stopPropagation();if(!x.dis)x.f()};b.appendChild(e)});this.bs=[...b.children];this.sel=Math.max(0,btns.findIndex(x=>!x.dis));this.hl()};
+  const show=(txt,btns,col)=>{t.textContent=txt;b.className=col?'col':'';b.innerHTML='';btns.forEach(x=>{const e=document.createElement('button');const l=document.createElement('span');l.textContent=x.l;e.append(l);if(x.sub){const q=document.createElement('small');q.textContent=x.sub;e.append(q)}if(x.dis)e.classList.add('dis');e.style.setProperty('--i',b.children.length);e.onclick=ev=>{ev.stopPropagation();if(!x.dis)x.f()};b.appendChild(e)});const bx=$('tdbox');bx.style.animation='none';void bx.offsetWidth;bx.style.animation='';this.bs=[...b.children];this.sel=Math.max(0,btns.findIndex(x=>!x.dis));this.hl()};
   const begin=()=>{d.hidden=true;this.dlg=0;this.go()};
   const has=[0,1,2,3].map(i=>Save.meta(Save.read(i)));
   const main=()=>show('',[{l:'はじめから',f:newg},{l:'つづきから',f:cont,dis:!has.some(Boolean)},{l:'こんふぃぐ',f:conf}],1);
   const newg=()=>{if(has[0])show('オートセーブのデータは、あたらしいデータで上書きされます。(スロット1〜3のデータは消えません)',[{l:'はじめる',f:begin},{l:'もどる',f:main}],1);else begin()};
-  const cont=()=>show('どのデータで始めますか？',[0,1,2,3].map(i=>({l:Save.lab(i),sub:has[i]?`${Save.fmt(has[i].t)}　${Save.sub(has[i])}`:'データなし',dis:!has[i],f:()=>{if(Save.loadSlot(i,false)){ReelManager.render();GameManager.hud();begin()}}})).concat([{l:'もどる',f:main}]),1);
+  const cont=()=>show('どのデータで始めますか？',[0,1,2,3].map(i=>({l:Save.lab(i),sub:has[i]?`${Save.fmt(has[i].t)}　${Save.sub(has[i])}`:'データなし',dis:!has[i],f:()=>{Ld.show();setTimeout(()=>{if(Save.loadSlot(i,false)){ReelManager.render();GameManager.hud();setTimeout(()=>Ld.hide(begin),420)}else Ld.hide()},140)}})).concat([{l:'もどる',f:main}]),1);
   const conf=()=>show('まだ実装されてないよ',[{l:'もどる',f:main}],1);
   main()},
  hl(){(this.bs||[]).forEach((e,i)=>e.classList.toggle('on',i===this.sel))},
@@ -1782,6 +1818,8 @@ $('hpc').onclick=()=>{const G=GameManager;if(!Yami.ready())return G.say('リー�
 $('hpg').onclick=()=>{const G=GameManager;if(!Yami.ready())return G.say('リール停止後・会話終了後に誘発してください');$('dbg').style.display='none';view('m',()=>Happy.later())};
 
 // ===== セーブ(ブラウザのlocalStorageに5秒ごとにオートセーブ。起動時に読み込み) =====
+// ロード画面: 全面を暗くして、右下に小さなループアニメだけ出す(ページの読み込み直しの間も、固まって見えないように)
+const Ld={show(){const e=$('ldg');e.classList.remove('out');e.style.display='flex'},hide(fn){const e=$('ldg');e.classList.add('out');setTimeout(()=>{e.style.display='none';e.classList.remove('out');document.documentElement.classList.remove('ld');if(fn)fn()},300)}};
 const Save={KEY:'luckyjug-save-v1',PEND:'luckyjug-pending',t:0,ok:true,off:false,
  key(i){return i?`luckyjug-save-s${i}`:this.KEY}, // 0=オートセーブ(従来のキーのまま) 1〜3=手動スロット
  snap(){return{v:1,
@@ -1834,16 +1872,18 @@ const Save={KEY:'luckyjug-save-v1',PEND:'luckyjug-pending',t:0,ok:true,off:false
  clear(){this.off=true;try{for(let i=0;i<4;i++)localStorage.removeItem(this.key(i))}catch(e){}},
  info(){const i=$('save-info');i.textContent=this.ok?`オートセーブ: ON / 最終: ${this.t?new Date(this.t).toLocaleTimeString():'まだ'}`:'この環境ではセーブできません（ブラウザの保存が無効）'},
  start(){setInterval(()=>this.autosave(),5000);addEventListener('pagehide',()=>this.autosave());document.addEventListener('visibilitychange',()=>{if(document.hidden)this.autosave()})},
- // 「データ」画面: 4つのスロットの一覧(オートセーブ1+手動3)。2度押しで確定(上書き・ロードは「本当に？」)
- renderSlots(){const box=$('svl');box.innerHTML='';this.info();
-  const arm=(b,fn)=>{b.onclick=()=>{if(b.dataset.arm){fn();return}b.dataset.arm=1;const o=b.textContent;b.textContent='本当に？';setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.textContent=o}},3000)}};
-  for(let i=0;i<4;i++){const d=this.read(i),m=this.meta(d),row=document.createElement('div');row.className='svr';
-   const inf=document.createElement('div');inf.className='svi';const bb=document.createElement('b');bb.textContent=this.lab(i)+(i?'':'(5秒ごと)');const sp=document.createElement('span');sp.textContent=m?`${this.fmt(m.t)}　${this.sub(m)}`:'データなし';inf.append(bb,sp);
-   const bt=document.createElement('div');bt.className='svb';
-   if(i){const sv=document.createElement('button');sv.textContent='セーブ';const doSave=()=>{if(this.save(i))GameManager.say(`スロット${i}にセーブした`);else GameManager.say('セーブできませんでした');this.renderSlots()};if(m)arm(sv,doSave);else sv.onclick=doSave;bt.append(sv)}
-   const ld=document.createElement('button');ld.textContent='ロード';if(!m)ld.disabled=true;else arm(ld,()=>this.reloadTo(i));bt.append(ld);
-   row.append(inf,bt);box.append(row)}}};
-$('datab').onclick=()=>{$('savep').hidden=false;$('sv-del').textContent='全データを削除';Save.renderSlots()};
+ // 「データ」画面: ①スロットを選ぶ → ②セーブ/ロードを選ぶ → ③確認(上書き・ロード)
+ renderSlots(){const box=$('svl'),st=this.vw||(this.vw={v:'list'});box.innerHTML='';this.info();if(this.msg){$('save-info').textContent=this.msg;this.msg=''}
+  $('sv-del').hidden=$('sv-x').hidden=st.v!=='list';
+  const btn=(txt,fn,dis)=>{const b=document.createElement('button');b.textContent=txt;b.onclick=fn;if(dis)b.disabled=true;return b},go=v=>{this.vw=v;this.renderSlots()},div=(c,t)=>{const e=document.createElement('div');e.className=c;if(t)e.textContent=t;return e};
+  if(st.v==='list'){for(let i=0;i<4;i++){const m=this.meta(this.read(i)),b=document.createElement('button');b.className='svr';const l=document.createElement('b');l.textContent=this.lab(i)+(i?'':'(5秒ごと)');const sp=document.createElement('span');sp.textContent=m?`${this.fmt(m.t)}　${this.sub(m)}`:'データなし';b.append(l,sp);b.style.setProperty('--i',i);if(this.hlSlot===i)b.classList.add('saved');b.onclick=()=>go({v:'act',i});box.append(b)}this.hlSlot=-1;return}
+  const i=st.i,m=this.meta(this.read(i));box.append(div('svh sel',`${this.lab(i)}　${m?this.fmt(m.t)+'　'+this.sub(m):'データなし'}`));const idx=a=>[...a.children].forEach((e,k)=>e.style.setProperty('--i',k));
+  if(st.v==='act'){const a=div('svq');a.append(btn('セーブ',()=>{if(m)go({v:'conf',i,k:'save'});else this.doSave(i)},!i),btn('ロード',()=>go({v:'conf',i,k:'load'}),!m),btn('もどる',()=>go({v:'list'})));
+   idx(a);if(!i)box.append(div('svn','オートセーブ枠は自動で書き換わります。ロードだけできます。'));box.append(a);return}
+  box.append(div('svh warn',st.k==='save'?'既に保存されたデータがあります。上書きしますか？':'セーブしていないデータは失われます。ロードしますか？'));
+  const a=div('svq');a.append(btn('はい',()=>{if(st.k==='save')this.doSave(i);else{Ld.show();setTimeout(()=>{if(!this.reloadTo(i))Ld.hide()},180)}}),btn('いいえ',()=>go({v:'act',i})));idx(a);box.append(a)},
+ doSave(i){this.msg=this.save(i)?`スロット${i}にセーブしました`:'セーブできませんでした';GameManager.say(this.msg);this.vw={v:'list'};this.hlSlot=i;this.renderSlots()}};
+$('datab').onclick=()=>{$('savep').hidden=false;$('sv-del').textContent='全データを削除';Save.vw={v:'list'};Save.renderSlots()};
 $('sv-x').onclick=()=>{$('savep').hidden=true};
 $('sv-del').onclick=e=>{if(e.target.textContent==='全データを削除'){e.target.textContent='本当に削除？もう一度押す';return}Save.clear();location.reload()};
 
@@ -2004,6 +2044,7 @@ $('stb').onclick=()=>{$('statp').hidden=!$('statp').hidden};
 const __pend=Save.boot(),__nt=/[?&]notitle/.test(location.search)||location.hash==='#notitle';if(__nt&&!__pend)Save.load();ReelManager.render();GameManager.hud();Save.start();
 
 // タイトル画面を始める(?notitle を付けて開くと飛ばせる)
+if(document.documentElement.classList.contains('ld'))setTimeout(()=>Ld.hide(),450); // 読み込み直しで始まったときは、少し見せてから消す
 if(__nt||__pend)Title.skip();else{let go=0;const once=()=>{if(go)return;go=1;try{Title.init()}catch(e){Title.skip()}};
   try{document.fonts.load('93px JerseyCharted','SLOVER7BA').then(once,once)}catch(e){once()}setTimeout(once,1500)}
 </script></body></html>
